@@ -1,0 +1,63 @@
+---
+title: "Connect Your AI Tool"
+navLabel: "Connect Your AI Tool"
+group: "user-guide"
+description: "Register Daemon8 as an MCP server so your agent can query the stream."
+order: 10
+---
+
+Once Daemon8 is installed, the next job is simple: let your agent see it. `daemon8 setup` auto-configures Claude Code, Cursor, Continue.dev, and any MCP client over HTTP/SSE or stdio. Windsurf and Gemini CLI are detected too. For anything else, a manual JSON entry works.
+
+## Auto-Configured Tools
+
+`setup` checks your home directory for each tool's config location. If it finds one, it offers to register Daemon8 as an MCP server in place.
+
+<SimpleTable
+  headers={["Tool", "Config File", "Transport"]}
+  rows={[
+    ["Claude Code", "~/.claude.json", "HTTP (stdio channel added for live alerts)"],
+    ["Cursor", "~/.cursor/mcp.json", "HTTP"],
+    ["Continue.dev", "~/.continue/config.json", "HTTP"],
+    ["Windsurf", "~/.codeium/windsurf/mcp_config.json", "HTTP"],
+    ["Gemini CLI", "~/.gemini/settings.json", "HTTP"],
+  ]}
+  colWidths={["160px", "280px", "auto"]}
+/>
+
+For Claude Code, `setup` also registers a second stdio entry (`daemon8-channel`) so warn-and-error observations push directly into the session without polling.
+
+## Running Setup Again
+
+`daemon8 setup` is idempotent. Run it anytime to re-scan for new tools, pick up installs that were not present on first run, or repair a stale config. Existing Daemon8 entries are detected and left alone unless you choose to overwrite them.
+
+## Manual Configuration
+
+If your MCP client is not in the auto-detect list, write the entry directly. Each tab below shows the JSON block to paste into the corresponding config file.
+
+<McpConfigTabs />
+
+## Two Transports
+
+The daemon exposes MCP over HTTP/SSE or stdio, both at once.
+
+`http://localhost:9077/mcp` is the always-on HTTP/SSE endpoint. It is the transport `setup` registers for every tool it supports, because the HTTP server runs for the entire daemon lifetime — the connection survives daemon restarts and client reconnects.
+
+Stdio is activated only when the MCP client spawns `daemon8 mcp` as a child process with a real pipe on stdin. The daemon detects this and starts an stdio transport for that session. When the client disconnects, the daemon exits. Use stdio when your MCP client does not support HTTP.
+
+## Verify The Connection
+
+The first tool call any agent should make is `debug_summary`. It returns connection counts, recent error volume, and the daemon version — enough to confirm the tool is wired correctly.
+
+```text
+Use debug_summary to tell me what the daemon can currently see.
+```
+
+Then call `debug_observe` to read the stream. See <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>MCP Tools</Link> for the full tool list and parameter reference.
+
+## If It Does Not Work
+
+See <Link to="/docs/$slug" params={{ slug: "troubleshooting" }}>Troubleshooting</Link> for config paths, port conflicts, and the fastest way to reset an MCP client that cannot find the daemon.
+
+## What's Next
+
+With MCP wired, the next step is hook enrollment — so every session your agent runs announces itself on the stream. See <Link to="/docs/$slug" params={{ slug: "enroll-your-agent" }}>Enroll Your Agent</Link>.

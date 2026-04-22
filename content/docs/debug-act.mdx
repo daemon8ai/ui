@@ -1,0 +1,180 @@
+---
+title: "debug_act"
+navLabel: "debug_act"
+group: "reference"
+description: "Browser and device command surface exposed by the debug_act MCP tool."
+order: 22
+---
+
+`debug_act` is the Command surface, peer to the Query tools on <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>MCP Tools</Link>. One action per call, routed over CDP to the browser or over ADB to a device. The `screenshot` action accepts a `device_serial` to route the capture through ADB instead of the browser. Every action ships with every install.
+
+Every action takes an optional `tab_id`. Omit it to target the first tab the daemon finds. Call the `list_tabs` action first if you need a specific one.
+
+## Actions
+
+<SimpleTable
+  headers={["Action", "Parameters", "What It Does"]}
+  colWidths={["200px", "360px", "auto"]}
+  rows={[
+    [<code key="ej">eval_js</code>, <><code key="1">tab_id?</code>, <code key="2">expression</code></>, "Evaluate a JavaScript expression in the tab. Returns the stringified result."],
+    [<code key="ss">screenshot</code>, <><code key="1">tab_id?</code>, <code key="2">selector?</code>, <code key="3">device_serial?</code>, <code key="4">device_platform?</code></>, "Capture a PNG. With a selector, crops to the element. With device_serial (+ optional device_platform: android | vega), captures from the device instead of the browser. Writes to the screenshot directory and returns the path."],
+    [<code key="gd">get_dom</code>, <><code key="1">tab_id?</code>, <code key="2">selector?</code></>, "Return rendered HTML for the full page or a CSS-scoped subtree."],
+    [<code key="nav">navigate</code>, <><code key="1">tab_id?</code>, <code key="2">url</code></>, "Navigate the tab to a URL. Returns the resolved page title."],
+    [<code key="ic">inject_css</code>, <><code key="1">tab_id?</code>, <code key="2">css</code>, <code key="3">temporary?</code></>, "Inject a CSS string. temporary defaults to true, which tracks the injection so revert_css can remove it. Returns an element_id."],
+    [<code key="rc">revert_css</code>, <code key="1">tab_id?</code>, "Remove every CSS block previously injected with temporary=true. Returns reverted_count."],
+    [<code key="sv">set_viewport</code>, <><code key="1">tab_id?</code>, <code key="2">viewport_width?</code>, <code key="3">viewport_height?</code>, <code key="4">viewport_scale?</code>, <code key="5">viewport_mobile?</code>, <code key="6">viewport_ua?</code></>, "Override the tab viewport. Defaults target an iPhone 15: 390 x 844 CSS px, scale 2.0, mobile true. viewport_ua optionally overrides the user agent string."],
+    [<code key="cv">clear_viewport</code>, <code key="1">tab_id?</code>, "Restore the tab to its default viewport."],
+    [<code key="gp">get_perf_metrics</code>, <code key="1">tab_id?</code>, "Return Chrome performance counters for the tab (layout counts, paint counts, JS heap, and related metrics)."],
+    [<code key="lt">list_tabs</code>, "—", "List all tabs the daemon sees. Use this to discover tab_id values."],
+    [<code key="nc">network_conditions</code>, <><code key="1">tab_id?</code>, <code key="2">network_preset?</code></>, <>Apply a throttling preset. Values: <code key="p1">offline</code>, <code key="p2">slow-3g</code>, <code key="p3">fast-3g</code>, <code key="p4">restore</code>. Default is <code key="p5">restore</code>.</>],
+    [<code key="si">storage_inspect</code>, <code key="1">tab_id?</code>, "Return the current state of cookies, localStorage, and sessionStorage for the tab origin."],
+    [<code key="sse">storage_set</code>, <><code key="1">tab_id?</code>, <code key="2">store_type</code>, <code key="3">storage_key</code>, <code key="4">storage_value?</code></>, <>Write a key/value. store_type is one of <code key="st1">localstorage</code>, <code key="st2">sessionstorage</code>, <code key="st3">cookie</code>.</>],
+    [<code key="sc">storage_clear</code>, <><code key="1">tab_id?</code>, <code key="2">storage_types?</code></>, <>Clear storage. storage_types is a comma-separated list, or <code key="a">all</code>. Members: <code key="m1">cookies</code>, <code key="m2">local_storage</code>, <code key="m3">session_storage</code>, <code key="m4">indexeddb</code>, <code key="m5">cache_storage</code>, <code key="m6">service_workers</code>. Default: <code key="a2">all</code>.</>],
+    [<code key="eap">element_at_point</code>, <><code key="1">tab_id?</code>, <code key="2">x</code>, <code key="3">y</code></>, "Return the element at a viewport CSS-pixel coordinate. Locate interactive targets before firing eval_js."],
+  ]}
+/>
+
+## eval_js
+
+```json
+{ "action": "eval_js", "expression": "document.title" }
+```
+
+Response: `{ "result": "Daemon8 - Runtime Observation" }`.
+
+## screenshot
+
+```json
+{ "action": "screenshot", "selector": "header" }
+```
+
+Response: `{ "screenshot": "/path/to/file.png", "size_bytes": 48231, "selector": "header" }`. With `device_serial`, the response also carries `source` and `serial`.
+
+## get_dom
+
+```json
+{ "action": "get_dom", "selector": "main" }
+```
+
+Response: `{ "html": "<main>...</main>" }`.
+
+## navigate
+
+```json
+{ "action": "navigate", "url": "https://example.com" }
+```
+
+Response: `{ "navigated": true, "title": "Example Domain" }`.
+
+## inject_css
+
+```json
+{ "action": "inject_css", "css": "body { outline: 2px solid magenta; }" }
+```
+
+Response: `{ "injected": true, "element_id": 42, "temporary": true }`.
+
+## revert_css
+
+```json
+{ "action": "revert_css" }
+```
+
+Response: `{ "reverted_count": 3 }`.
+
+## set_viewport
+
+```json
+{
+  "action": "set_viewport",
+  "viewport_width": 412,
+  "viewport_height": 915,
+  "viewport_scale": 2.625,
+  "viewport_mobile": true
+}
+```
+
+Response: `{ "viewport_set": true, "width": 412, "height": 915, "scale": 2.625, "mobile": true }`.
+
+## clear_viewport
+
+```json
+{ "action": "clear_viewport" }
+```
+
+Response: `{ "viewport_cleared": true }`.
+
+## get_perf_metrics
+
+```json
+{ "action": "get_perf_metrics" }
+```
+
+Response: `{ "metrics": { "...": "..." } }`.
+
+## list_tabs
+
+```json
+{ "action": "list_tabs" }
+```
+
+Response: `{ "tabs": [{ "id": "...", "url": "...", "title": "..." }] }`.
+
+## network_conditions
+
+```json
+{ "action": "network_conditions", "network_preset": "slow-3g" }
+```
+
+Response: `{ "network_conditions": "slow-3g" }`.
+
+## storage_inspect
+
+```json
+{ "action": "storage_inspect" }
+```
+
+Response: an object describing cookies, localStorage, and sessionStorage for the tab origin.
+
+## storage_set
+
+```json
+{
+  "action": "storage_set",
+  "store_type": "localstorage",
+  "storage_key": "feature_flag",
+  "storage_value": "on"
+}
+```
+
+Response: `{ "set": true }`.
+
+## storage_clear
+
+```json
+{ "action": "storage_clear", "storage_types": "cookies,local_storage" }
+```
+
+Response: `{ "cleared": true }`.
+
+## element_at_point
+
+```json
+{ "action": "element_at_point", "x": 120, "y": 48 }
+```
+
+Response: the element descriptor at those coordinates.
+
+## Typical call sequence
+
+```text
+1. debug_act list_tabs                          find the tab_id
+2. debug_checkpoint                             mark the before state
+3. debug_act navigate { tab_id, url }           trigger the flow
+4. debug_observe { since_checkpoint }           read the resulting stream delta
+5. debug_act screenshot { tab_id }              capture the current state
+```
+
+<Callout>
+  See <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>MCP Tools</Link> for the full tool surface and <Link to="/docs/$slug" params={{ slug: "devices" }}>Devices</Link> for the ADB side of device screenshots.
+</Callout>

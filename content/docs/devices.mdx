@@ -1,0 +1,68 @@
+---
+title: "Devices"
+navLabel: "Devices"
+group: "reference"
+description: "Stream logs from connected Android and Amazon Vega devices over ADB."
+order: 27
+---
+
+Daemon8 streams logs from connected Android and Amazon Vega (Fire TV) devices over ADB. Every log line becomes an `Observation` with origin `Device { serial, platform }` — the same shape as browser and application telemetry, so the same queries and filters work across all three sources.
+
+Once a device is attached to the host's ADB server, the daemon picks it up automatically. No per-device configuration and no on-device agent.
+
+## Requirements
+
+- An ADB server running on the host. Default address is `127.0.0.1:5037`.
+- `adb.enabled = true` in the daemon config. When disabled, the device manager is not started.
+- A scan interval (`adb.scan_interval_secs`) that controls how often the daemon polls for attached devices.
+
+See <Link to="/docs/$slug" params={{ slug: "configuration" }}>Configuration</Link> for the `[adb]` section.
+
+## Android
+
+Devices attached over USB or via `adb connect <ip>:<port>` appear automatically on the next scan. For each new device, the daemon:
+
+1. Emits a `lifecycle` observation with `event_name = "device_connected"`.
+2. Starts `adb logcat -v threadtime` and parses each line into a `log` observation with origin `Device { serial, platform: "android" }`.
+3. On disconnect, stops the log stream and emits `event_name = "device_disconnected"`.
+
+Logcat severity maps directly to daemon8 severity (V → trace, D → debug, I → info, W → warn, E → error). Tag, PID, and message land in the observation's `data` payload.
+
+## Amazon Vega
+
+Amazon Vega is the OS on Fire TV hardware. The daemon detects a Vega device by running `which loggingctl` over ADB shell during the connect handshake; if the command resolves, the device is Vega, otherwise it is treated as Android.
+
+For Vega devices, the daemon streams VVD logs via `loggingctl log -f -o short_precise` and the observations carry origin `Device { serial, platform: "vega" }`. Everything else — lifecycle events, severity mapping, payload shape — matches the Android path.
+
+## Screenshots
+
+`debug_act` with `action = "screenshot"` accepts an optional `device_serial` (plus an optional `device_platform`) to target a connected device instead of the browser.
+
+Two capture paths exist:
+
+- **Host window capture** for emulators running on the same machine as the daemon. Requires a build with the `xcap` feature enabled. When available, it is tried first because it avoids the overhead of an ADB round trip.
+- **ADB screencap** for physical devices, and as the fallback when host window capture is not available or did not find a matching window.
+
+See <Link to="/docs/$slug" params={{ slug: "debug-act" }}>debug_act</Link> for the full screenshot arguments and response shape.
+
+## Verifying attachment
+
+Every connected device shows up alongside browser and application sources in the connection listing:
+
+```bash
+# CLI
+daemon8 connections
+
+# HTTP
+curl -s http://127.0.0.1:9077/api/connections
+```
+
+Or from a connected MCP client, call `debug_connections`.
+
+Each entry includes the source kind (`device`), the name (the device serial), and the observation count attributed to it.
+
+## Related
+
+- <Link to="/docs/$slug" params={{ slug: "observation-schema" }}>Observation Schema</Link> — the shape of `Device` origin and the kinds devices produce.
+- <Link to="/docs/$slug" params={{ slug: "debug-act" }}>debug_act</Link> — screenshots and other actions.
+- <Link to="/docs/$slug" params={{ slug: "configuration" }}>Configuration</Link> — `[adb]` settings for server address, scan interval, and enablement.

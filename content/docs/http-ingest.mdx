@@ -1,0 +1,74 @@
+---
+title: "HTTP Ingest"
+navLabel: "HTTP Ingest"
+group: "reference"
+description: "The local HTTP write path for pushing structured observations into Daemon8."
+order: 23
+---
+
+HTTP ingest is how application runtime writes into the stream. Anything that can send JSON over localhost can push an observation in — SDKs, curl, shell scripts, log shippers, custom workers. The default endpoint is `http://localhost:9077/ingest`. For batches, `POST /ingest/batch`.
+
+## Endpoints
+
+<SimpleTable
+  headers={["Method / Path", "Body", "Response"]}
+  colWidths={["220px", "auto", "auto"]}
+  rows={[
+    [<code key="s">POST /ingest</code>, "JSON object — one observation", <><code key="r">202 Accepted</code>, <code key="r2">{'{"ok":true}'}</code></>],
+    [<code key="b">POST /ingest/batch</code>, "JSON array of observation objects", <><code key="r">202 Accepted</code>, <code key="r2">{'{"ok":true,"count":N}'}</code></>],
+    [<code key="h">GET /health</code>, "—", <><code key="r">200 OK</code>, text body <code key="r2">ok</code></>],
+  ]}
+/>
+
+## Minimum useful payload
+
+```json
+{
+  "kind": "log",
+  "app": "checkout",
+  "severity": "info",
+  "data": { "message": "payment attempt started" }
+}
+```
+
+## Field reference
+
+Every recognized top-level meta field is extracted from the JSON before the rest of the body becomes the observation data. Unknown fields are preserved as part of the data payload.
+
+<SimpleTable
+  headers={["Field", "Type", "Required", "Default", "Notes"]}
+  colWidths={["140px", "120px", "100px", "140px", "auto"]}
+  rows={[
+    [<code key="k">kind</code>, "string", "no", <code key="d1">log</code>, <>Observation category. Recognized values: <code key="v1">log</code>, <code key="v2">query</code>, <code key="v3">http</code>, <code key="v4">exception</code>, <code key="v5">metric</code>, <code key="v6">state_snapshot</code>, <code key="v7">custom</code>. Unknown values become a <code key="c">custom</code> observation whose channel is the unknown kind. If <code key="kk">kind</code> is omitted and <code key="cc">channel</code> is present, the observation is <code key="c2">custom</code>.</>],
+    [<code key="a">app</code>, "string", "no", <code key="d2">unknown</code>, "Source name. Becomes the application origin; filter with origins=['app:name']."],
+    [<code key="s">severity</code>, "string", "no", <code key="d3">debug</code>, <>One of <code key="v1">trace</code>, <code key="v2">debug</code>, <code key="v3">info</code>, <code key="v4">warn</code> (<code key="v5">warning</code> is accepted), <code key="v6">error</code>. Unknown values fall back to <code key="v7">debug</code>. Values at <code key="v8">warn</code> or above trigger default push subscriptions.</>],
+    [<code key="d">data</code>, "object", "no", "—", "Explicit observation payload. If omitted, every other top-level field (after meta extraction) becomes the data object."],
+    [<code key="c">channel</code>, "string", "no", "—", "Channel for custom observations. Required shape for any custom observation you want to filter by channel name later."],
+    [<code key="f">file</code>, "string", "no", "—", "Source file path. Stored on the observation's source_location."],
+    [<code key="l">line</code>, "number", "no", "0", "Line number. Stored on source_location alongside file."],
+    [<code key="fn">function</code>, "string", "no", "—", "Function name. Stored on source_location alongside file."],
+  ]}
+/>
+
+The daemon stamps its own `timestamp_ns` and assigns a monotonic `id` on insert. Clients cannot set either.
+
+## Kinds
+
+Recognized `kind` values map to typed observations — for example, `query` expects `data.sql` and `data.duration_ms`, `http` expects `data.method` and `data.url`, `metric` expects `data.name` and `data.value`. When the expected fields are missing, the observation is still stored, but as `custom` with the kind name as its channel. The full enum, including shapes for `js_exception`, `lifecycle`, and `state_snapshot`, is in <Link to="/docs/$slug" params={{ slug: "observation-schema" }}>Observation Schema</Link>.
+
+## Channels
+
+The `channel` field groups custom observations so agents can filter on them. Pair it with `kind: "custom"` — or omit `kind` entirely and the daemon infers custom from the presence of a channel. Channels are freeform strings; pick stable identifiers and reuse them across the lifetime of the feature producing them.
+
+## Beyond HTTP
+
+Two other ingest transports are available when enabled in <Link to="/docs/$slug" params={{ slug: "configuration" }}>configuration</Link>:
+
+- UDP listener (default bind `127.0.0.1:9078`, max packet 65536 bytes). Off by default. Useful for fire-and-forget pipelines where blocking on an HTTP response is the wrong tradeoff.
+- Unix socket (default path `/tmp/daemon8.sock`, Unix only). Off by default. Useful for on-host workers that want to avoid even the loopback cost.
+
+Both carry the same JSON shape as HTTP. Payloads flow through the same normalization.
+
+## What happens next
+
+The observation lands in the store with an assigned id and timestamp. From that moment it is queryable via <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>debug_observe</Link>, counted by `debug_summary`, and pushed to any `debug_subscribe` session whose filter matches — including the default `severity >= warn` subscription every fresh session opens with.

@@ -1,0 +1,59 @@
+{
+  "name": "@daemon8/app",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "imports": {
+    "#/*": "./src/*"
+  },
+  "scripts": {
+    "dev": "vite dev --port 3000",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@content-collections/core": "^0.15.0",
+    "@content-collections/mdx": "^0.2.2",
+    "@content-collections/vite": "^0.3.0",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@tanstack/react-router": "^1",
+    "@tanstack/react-start": "^1",
+    "clsx": "^2",
+    "cmdk": "^1.1.1",
+    "github-slugger": "^2.0.0",
+    "hast-util-to-string": "^3.0.1",
+    "lucide-react": "^0.487",
+    "mdast-util-to-string": "^4.0.0",
+    "minisearch": "^7.2.0",
+    "motion": "^12",
+    "react": "^19",
+    "react-dom": "^19",
+    "react-hook-form": "^7",
+    "rehype-autolink-headings": "^7.1.0",
+    "rehype-slug": "^6.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-mdx": "^3.1.0",
+    "remark-parse": "^11.0.0",
+    "shiki": "^4.0.2",
+    "sonner": "^2",
+    "tailwind-merge": "^3",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.1.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4",
+    "@tanstack/router-plugin": "^1",
+    "@types/mdast": "^4.0.4",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^5",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vite": "^7",
+    "vite-tsconfig-paths": "^5",
+    "vitest": "^4.1.4"
+  }
+}

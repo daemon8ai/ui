@@ -1,0 +1,56 @@
+---
+title: "Multi-Agent Coordination"
+navLabel: "Multi-Agent Coordination"
+group: "user-guide"
+description: "The stream is an agent-to-agent bus: one agent leaves work behind for another without a human relay."
+order: 14
+---
+
+The stream is an agent-to-agent bus. Multiple agents read and write the same stream — every observation any agent writes, on any tool, is visible to every other agent connected to the same daemon. One session finds something useful; another picks it up without starting from zero.
+
+The point is not to make multi-agent work sound exotic. The point is to remove relay work.
+
+## A Small Coordination Loop
+
+Agent A writes a finding into a named channel with `debug_ingest`. Agent B filters `debug_observe` on that channel and picks up the note.
+
+```text
+Agent A:
+debug_ingest with app="agent-a", channel="checkout-bug",
+  data={ "message": "Checkout times out when payment callback exceeds 3s",
+         "file": "api/checkout.py:142" }
+
+Agent B:
+debug_observe with channel="checkout-bug"
+  -> returns agent-a's finding plus anything else ingested on that channel
+```
+
+The ingested observation is durable, searchable by `channel`, `app`, or `text_match`, and available across tools and sessions. One session can find something useful. Another can pick it up later without starting from zero.
+
+## Per-Agent Slices
+
+`debug_subscribe` narrows the agent-to-agent bus to per-agent slices: each agent subscribes to the slice of the stream it cares about — a channel, an app origin, a severity threshold. Matching observations are pushed into the session as they land; the rest stay out of the way. Narrow scope, less noise, faster loops.
+
+## Roles
+
+Projects declare a default role per session through `.daemon8-cli.toml`. The role is a label specialists coordinate around — the daemon does not enforce behavior on it, but every hook event carries it, which makes role-based filtering trivial.
+
+Initialize one from the project root:
+
+```bash
+daemon8 init --role worker
+```
+
+Valid values are `queen`, `worker`, `solo`, and `watchdog`. The command writes `.daemon8-cli.toml` with `project.role_default` set accordingly. That shortcut is the non-interactive path. For the full enrollment walkthrough — including registering hooks in your CLI's settings — see <Link to="/docs/$slug" params={{ slug: "enroll-your-agent" }}>Enroll Your Agent</Link>. The full config schema is at <Link to="/docs/$slug" params={{ slug: "cli-hook-config" }}>CLI Hook Config</Link> — enrollment, interests, intents, and distillation options are all declared in the same file.
+
+## The CLI Hook As Enrollment Layer
+
+`daemon8 cli-hook` is invoked by the tool's lifecycle hooks — Claude Code, Cursor, Gemini, Codex, Copilot, Continue — and posts `agent.*` observations into the stream for session start, pre-tool-use, post-tool-use, compaction, and session end. Every event carries the project's role and the tool that fired it.
+
+A peer agent filters on role and event kind to observe who else is working on the project. A supervisor filters on `agent.precompact` to know when a worker is about to lose context. A watchdog filters on `severity >= warn` across every `agent.posttooluse` to catch a tool crashing on another session.
+
+See <Link to="/docs/$slug" params={{ slug: "cli-hook" }}>CLI Hook</Link> for the full event list, tool detection rules, and payload shape.
+
+## Keep The Goal Simple
+
+Coordination is whatever agents do when they can read each other's output. The stream provides the read; the rest is convention. Start with one channel and one `debug_ingest` call. The protocol evolves from there.

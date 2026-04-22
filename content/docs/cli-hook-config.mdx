@@ -1,0 +1,159 @@
+---
+title: "CLI Hook Config"
+navLabel: "CLI Hook Config"
+group: "reference"
+description: "The .daemon8-cli.toml schema: per-project enrollment, features, intents, distillation, and provider overrides."
+order: 29
+---
+
+`.daemon8-cli.toml` is the per-project config the CLI hook reads. Create one with `daemon8 init` at your project root — the command also walks you through hook registration, see <Link to="/docs/$slug" params={{ slug: "enroll-your-agent" }}>Enroll Your Agent</Link>. The file lives next to `.gitignore` and `.editorconfig`.
+
+## Resolution
+
+Values are merged last-wins:
+
+1. Compiled-in defaults
+2. User file: `cli.toml` in the daemon8 config directory (same location as `config.toml`)
+3. Project file: the nearest `.daemon8-cli.toml` found by walking up from the current working directory, stopping at the first `.git` directory or the filesystem root
+
+Parse errors in either file are absorbed and the handler continues with the next lower layer.
+
+## Minimal example
+
+`daemon8 init` writes this template. Copy it verbatim if you are writing the file by hand:
+
+```toml
+# Daemon8 CLI hook configuration.
+# Schema reference: https://daemon8.ai/docs/cli-hook-config
+
+[project]
+slug = "my-project"
+role_default = "solo"
+
+[enrollment]
+enabled = true
+scope = []
+
+[features]
+intents = true
+inbox = true
+state_tracking = true
+compaction_recovery = true
+heartbeat_interval = "30s"
+
+[intents.auto_declare]
+expertise = []
+
+[distillation]
+track_todowrite = true
+track_git_commits = true
+track_file_writes = true
+coarsen_file_writes_below_threshold = 5
+```
+
+## `[project]`
+
+<SimpleTable
+  headers={["Key", "Type", "Default", "Notes"]}
+  colWidths={["220px", "120px", "180px", "auto"]}
+  rows={[
+    ["slug", "string", "(basename of project dir)", "Project identifier used on emitted observations."],
+    ["role_default", "string", "solo", "One of queen, worker, solo, watchdog."],
+  ]}
+/>
+
+`role_default` is a project-declared label attached to this agent when it joins the stream. Roles are how specialist agents discover each other and coordinate — the daemon does not enforce semantics on them. `watchdog` is the one role the hook treats specially: watchdog agents advertise read-only capabilities in their join card.
+
+## `[enrollment]`
+
+<SimpleTable
+  headers={["Key", "Type", "Default", "Notes"]}
+  colWidths={["220px", "120px", "180px", "auto"]}
+  rows={[
+    ["enabled", "bool", "true", "Master switch. When false, the hook returns immediately on every event."],
+    ["scope", "array<string>", "[]", "Glob patterns recorded on the join observation. Informational; not enforced by the hook."],
+    ["banner", "string", "(none)", "Optional message emitted as an agent.banner observation after a successful join."],
+  ]}
+/>
+
+## `[features]`
+
+Feature flags read by downstream tooling and included on the join card. The hook itself does not gate behavior on these except `heartbeat_interval`.
+
+<SimpleTable
+  headers={["Key", "Type", "Default", "Notes"]}
+  colWidths={["260px", "120px", "140px", "auto"]}
+  rows={[
+    ["intents", "bool", "true", "Participate in intent declaration and matching."],
+    ["inbox", "bool", "true", "Accept inbox messages from other agents."],
+    ["state_tracking", "bool", "true", "Track todo lists, git commits, and file writes across the session."],
+    ["compaction_recovery", "bool", "true", "Write recovery notes before compaction."],
+    ["heartbeat_interval", "string", "30s", "Hint for the host CLI's heartbeat cadence."],
+  ]}
+/>
+
+## `[intents.auto_declare]`
+
+<SimpleTable
+  headers={["Key", "Type", "Default", "Notes"]}
+  colWidths={["220px", "160px", "140px", "auto"]}
+  rows={[
+    ["expertise", "array<string>", "[]", "Capabilities this agent declares on join. Free-form tags matched by other agents' interest patterns."],
+  ]}
+/>
+
+## `[[intents.interests]]`
+
+Array-of-tables. Each entry describes an observation pattern this agent wants to see.
+
+<SimpleTable
+  headers={["Key", "Type", "Default", "Notes"]}
+  colWidths={["220px", "160px", "140px", "auto"]}
+  rows={[
+    ["tags", "array<string>", "[]", "Tag labels the interest matches on."],
+    ["pattern", "string", "(none)", "Optional JMESPath-style expression evaluated against observation data."],
+    ["priority", "string", "normal", "One of high, normal, low."],
+    ["persistent", "bool", "false", "Keep the interest alive across sessions."],
+    ["push_on_match", "bool", "false", "Push matching observations into the agent's MCP session as notifications."],
+  ]}
+/>
+
+## `[distillation]`
+
+Controls which session activity is summarized into the observation stream.
+
+<SimpleTable
+  headers={["Key", "Type", "Default", "Notes"]}
+  colWidths={["320px", "120px", "140px", "auto"]}
+  rows={[
+    ["track_todowrite", "bool", "true", "Emit a summary when the agent updates its todo list."],
+    ["track_git_commits", "bool", "true", "Emit a summary for each git commit made during the session."],
+    ["track_file_writes", "bool", "true", "Emit a summary for each file write."],
+    ["coarsen_file_writes_below_threshold", "u32", "5", "Collapse multiple small writes into a single summary when the per-write line count falls below this threshold."],
+  ]}
+/>
+
+## `[providers.*]`
+
+Per-CLI overrides keyed by tool name (e.g. `[providers.claude-code]`, `[providers.copilot]`).
+
+<SimpleTable
+  headers={["Key", "Type", "Default", "Notes"]}
+  colWidths={["220px", "120px", "140px", "auto"]}
+  rows={[
+    ["enabled", "bool", "true", "When false, the hook skips enrollment when invoked under this tool. A provider-level false always overrides [enrollment].enabled = true."],
+    ["reason", "string", "(none)", "Human-readable explanation kept alongside the override."],
+  ]}
+/>
+
+Example — disable enrollment under Copilot only:
+
+```toml
+[providers.copilot]
+enabled = false
+reason = "internal policy"
+```
+
+## `[sources]`
+
+A pass-through table for arbitrary project metadata (data source URLs, owner tags, anything else you want attached to this project's config). The hook does not interpret `[sources]`; downstream tooling may.

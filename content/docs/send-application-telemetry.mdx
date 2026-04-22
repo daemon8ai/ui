@@ -1,0 +1,141 @@
+---
+title: "Send Application Telemetry"
+navLabel: "Send Application Telemetry"
+group: "user-guide"
+description: "Write observations into the stream over HTTP from any language."
+order: 12
+---
+
+Start small. You don't need an SDK migration or a large rollout to prove the model. One useful write is enough.
+
+This is how application runtime writes into the stream. The daemon is already running on localhost; anything that can speak HTTP can push observations in by POSTing JSON to `http://localhost:9077/ingest`.
+
+## Write One Observation
+
+This is your first `app`-origin observation. Run it from a terminal on the same machine as the daemon:
+
+```bash
+curl -X POST http://localhost:9077/ingest \
+  -H "Content-Type: application/json" \
+  -d '{
+    "kind": "log",
+    "app": "checkout",
+    "severity": "info",
+    "data": {
+      "message": "payment attempt started"
+    }
+  }'
+```
+
+The endpoint returns `202 Accepted` with `{"ok":true}` as soon as the observation is queued. Writes are fire-and-forget — the daemon persists and broadcasts from its own task.
+
+## What Matters In The Payload
+
+<SimpleTable
+  headers={["Field", "What It Does"]}
+  rows={[
+    ["kind", "Routes the observation. log, metric, query, exception, custom."],
+    ["app", "The origin name. Filter with origins=['app:checkout'] later."],
+    ["severity", "trace, debug, info, warn, error. warn and error push alerts to subscribed agents."],
+    ["data", "Freeform JSON body. A 'message' key formats cleanly in alerts."],
+  ]}
+  colWidths={["140px", "auto"]}
+/>
+
+For the exhaustive field list including `channel`, `file`, `line`, and batch ingest, see <Link to="/docs/$slug" params={{ slug: "http-ingest" }}>HTTP Ingest</Link>.
+
+## Query It Back
+
+Ask your agent to read the observation you just wrote:
+
+```text
+Use debug_observe with origins=["app:checkout"] and tell me whether you see a "payment attempt started" log.
+```
+
+The agent calls `debug_observe` against the local daemon and returns the matching slice.
+
+## Language Examples
+
+The ingest endpoint is a plain HTTP POST. No SDK required — every snippet below posts the same observation using that language's standard HTTP client.
+
+### Shell
+
+```bash
+curl -X POST http://localhost:9077/ingest \
+  -H "Content-Type: application/json" \
+  -d '{"kind":"log","app":"checkout","severity":"info","data":{"message":"payment attempt started"}}'
+```
+
+### Node.js
+
+```javascript
+await fetch('http://localhost:9077/ingest', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    kind: 'log',
+    app: 'checkout',
+    severity: 'info',
+    data: { message: 'payment attempt started' },
+  }),
+})
+```
+
+### Python
+
+```python
+import json, urllib.request
+
+req = urllib.request.Request(
+    'http://localhost:9077/ingest',
+    data=json.dumps({
+        'kind': 'log',
+        'app': 'checkout',
+        'severity': 'info',
+        'data': {'message': 'payment attempt started'},
+    }).encode(),
+    headers={'Content-Type': 'application/json'},
+)
+urllib.request.urlopen(req)
+```
+
+### PHP
+
+```php
+$payload = json_encode([
+    'kind'     => 'log',
+    'app'      => 'checkout',
+    'severity' => 'info',
+    'data'     => ['message' => 'payment attempt started'],
+]);
+
+$ch = curl_init('http://localhost:9077/ingest');
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+curl_exec($ch);
+```
+
+### Rust
+
+```rust
+use serde_json::json;
+
+let client = reqwest::Client::new();
+client
+    .post("http://localhost:9077/ingest")
+    .json(&json!({
+        "kind": "log",
+        "app": "checkout",
+        "severity": "info",
+        "data": { "message": "payment attempt started" }
+    }))
+    .send()
+    .await?;
+```
+
+## Why This Matters
+
+The moment your app writes into the stream, that output stops being trapped in one local surface. It becomes durable context your tool can query later — grep through a week of production-shape logs, correlate an exception with the browser console entry from the same second, or hand your agent a `since_checkpoint` cursor and let it watch what changes.
+
+One write is enough to prove the model. The rest is just more of the same call.

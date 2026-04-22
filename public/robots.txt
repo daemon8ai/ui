@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /waitlist/confirmed
+Disallow: /waitlist/preferences
+
+Sitemap: https://daemon8.ai/sitemap.xml

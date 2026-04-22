@@ -1,0 +1,40 @@
+# Default-deny: every hidden file, every markdown, every AI-context catch.
+.*
+*.md
+
+# Build outputs, dependencies, caches.
+node_modules/
+dist/
+.output/
+.vinxi/
+.content-collections/
+.tanstack/
+
+# Local machine artifacts — belt-and-suspenders (the .* rule catches .DS_Store too).
+**/.DS_Store
+
+# Gitignored media (deployed via scp per DEPLOY.md).
+public/vids/
+
+# AI context (belt-and-suspenders; .* catches these too).
+.claude/
+.aimind/
+.cursor/
+CLAUDE.md
+AGENTS.md
+
+# Package-manager noise (bun.lock is the canonical lockfile).
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Env files.
+.env
+.env.local
+.env.*.local
+
+# ----- Explicit allowlist: files we WANT tracked -----
+!.gitignore
+!.env.example
+!README.md
+!LICENSE

@@ -1,0 +1,65 @@
+---
+title: "Troubleshooting"
+navLabel: "Troubleshooting"
+group: "user-guide"
+description: "The smallest set of probes that finds the broken link in the Runtime I/O round-trip — daemon, tool, write, read."
+order: 16
+---
+
+Daemon8 is Runtime I/O: daemon running, tool connected, observation written, observation readable. Most first-run problems are one break in that round-trip. Find the break, fix the break.
+
+## Start With `daemon8 doctor --fix`
+
+Run it first. It probes the full boot-time surface and repairs what it can.
+
+```bash
+daemon8 doctor --fix
+```
+
+<SimpleTable
+  headers={["Check", "What It Verifies", "What --fix Does"]}
+  rows={[
+    ["config file", "~/.config/daemon8/config.toml exists", "Writes the default config"],
+    ["screenshot dir", "Screenshot output path exists and is writable", "Creates the directory"],
+    ["data dir", "SQLite parent directory exists and is writable", "Reports only"],
+    ["port 9077", "Ingest port is bindable (no other daemon squatting on it)", "Reports only"],
+    ["network reachable", "TCP connect to daemon8.ai:443 succeeds", "Reports only"],
+    ["launchd service", "macOS launchd agent is registered and running", "Reports remediation"],
+  ]}
+  colWidths={["170px", "auto", "230px"]}
+/>
+
+On macOS, if `launchd service` reports `state=not running`, the remediation is two steps: re-sign the binary with `codesign --force --sign - ~/.cargo/bin/daemon8`, then approve daemon8 under System Settings > Privacy & Security > App Management.
+
+## The Runtime I/O Round-Trip, Re-Verified
+
+Four probes, in order. The first one that fails is the break.
+
+1. **Daemon running?** — `daemon8 status` prints a `Daemon8 Status` block. The `Daemon` line should read `running`. If it reads `stopped` or the command errors, the daemon is not alive.
+2. **Tool connected?** — from the connected MCP client, call `debug_summary`. A JSON health snapshot means the client sees the daemon. An error means the MCP config did not land; re-run `daemon8 setup`.
+3. **Observation written?** — `curl -X POST http://localhost:9077/ingest -H "Content-Type: application/json" -d '{"kind":"log","app":"probe","data":{"message":"test"}}'` must return `202` with body `{'{"ok":true}'}`.
+4. **Observation readable?** — call `debug_observe` with `app: "probe"`. If step 3 returned 202 and this returns nothing, the daemon accepted but did not persist — inspect `daemon8 logs` for the reason.
+
+## Common Problems
+
+<SimpleTable
+  headers={["Symptom", "First check", "Next step"]}
+  rows={[
+    ["MCP client cannot see the daemon", "daemon8 status — is it running?", <>Re-run <code key="s">daemon8 setup</code>. Verify <code key="c">~/.claude.json</code> or the tool's MCP config points at the running daemon and restart the tool.</>],
+    ["Browser absent from debug_connections", "Is Chrome running with --remote-debugging-port=9222?", <>See <Link to="/docs/$slug" params={{ slug: "monitor-browser-activity" }}>Monitor Browser Activity</Link> for the launch command per platform.</>],
+    ["Ingested observation does not appear", "Did POST /ingest return 202?", <>Confirm the URL was <code key="u">http://localhost:9077/ingest</code>. Run <code key="d">daemon8 doctor</code> — port 9077 may be held by another process.</>],
+    ["macOS daemon will not start after install", "daemon8 doctor reports launchd state=not running", <>Re-sign: <code key="cs">codesign --force --sign - ~/.cargo/bin/daemon8</code>. Approve App Management in System Settings &gt; Privacy &amp; Security. Re-run <code key="i">daemon8 install</code>.</>],
+    ["ADB device not in debug_connections", "adb devices lists the device", "Restart the daemon after connecting the device — ADB is scanned on startup and at a configurable interval."],
+    ["Emulator ingest never arrives", "Ran adb reverse from inside the emulator?", <>Run <code key="r">adb reverse tcp:9077 tcp:9077</code> so ingest from the emulator reaches the host daemon.</>],
+    ["Observations disappear after a day", "Retention is 24 hours by default", <>See <Link to="/docs/$slug" params={{ slug: "storage-and-streaming" }}>Storage and Streaming</Link> to extend retention.</>],
+  ]}
+  colWidths={["240px", "230px", "auto"]}
+/>
+
+## Where Logs Live
+
+`daemon8 logs` prints the active log file path. `daemon8 logs --follow` tails it. The log surfaces ingest rejections, CDP reconnect attempts, ADB scan results, and panics — every break the four-step probe leaves unresolved has an entry here.
+
+## Nothing Works
+
+File an issue at the daemon8 repository with the output of `daemon8 doctor`, the last fifty lines of `daemon8 logs`, and the exact command or MCP call that failed. Those three together pinpoint nearly every reported break.

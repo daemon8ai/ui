@@ -1,0 +1,105 @@
+---
+title: "CLI Reference"
+navLabel: "CLI"
+group: "reference"
+description: "Every daemon8 subcommand, what it does, and when to reach for it."
+order: 20
+---
+
+The `daemon8` binary manages the local service, exposes the stream, and drives the browser. Most ongoing agent work happens through <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>MCP</Link>. Reach for the CLI to manage the service, run ad-hoc queries, or drive the browser from a shell.
+
+## Service lifecycle
+
+<SimpleTable
+  headers={["Command", "What it does"]}
+  colWidths={["260px", "auto"]}
+  rows={[
+    [<code key="serve">daemon8 serve</code>, "Start the daemon in the foreground. Logs to stderr. Use for debugging; prefer install for normal use."],
+    [<code key="install">daemon8 install</code>, "Register daemon8 as a background service (launchd on macOS, systemd on Linux, scheduled task on Windows). Starts on login and restarts on crash."],
+    [<code key="uninstall">daemon8 uninstall</code>, "Remove the background service. The binary stays on disk. Safe to run twice."],
+    [<code key="status">daemon8 status</code>, "Show whether the daemon is running and print connection info. Supports --json and --port."],
+    [<code key="logs">daemon8 logs [--follow]</code>, "Print the path to the active log file. Pass --follow to tail it in real time."],
+  ]}
+/>
+
+## Setup
+
+<SimpleTable
+  headers={["Command", "What it does"]}
+  colWidths={["260px", "auto"]}
+  rows={[
+    [<code key="setup">daemon8 setup</code>, "Interactive setup wizard. Picks a browser, writes MCP client config for detected tools, installs the service, and runs a health check. Run again any time to reconfigure."],
+    [<code key="doctor">daemon8 doctor [--fix]</code>, "Diagnose common environment and configuration issues. Pass --fix to attempt automatic repairs."],
+    [<code key="init">daemon8 init [--role ROLE] [--slug SLUG] [--force] [-y|--yes] [--install-hooks local|shared|global] [--force-hooks]</code>, <>Interactive wizard. Walks you through slug and role, writes <code key="f">.daemon8-cli.toml</code>, and optionally registers hooks in your CLI's settings. With <code key="y">--yes</code> it skips the wizard and accepts defaults; hook registration stays opt-in via <code key="i">--install-hooks</code>. See <Link to="/docs/$slug" params={{ slug: "enroll-your-agent" }}>Enroll Your Agent</Link> and <Link to="/docs/$slug" params={{ slug: "cli-hook-config" }}>CLI Hook Config</Link>.</>],
+    [<code key="comp">daemon8 completions SHELL</code>, "Generate shell completions. Supported shells: bash, elvish, fish, powershell, zsh."],
+  ]}
+/>
+
+The `--role` flag accepts `queen`, `worker`, `solo`, or `watchdog`. The default is `solo`.
+
+## Observation
+
+These commands talk to the running daemon over HTTP on the configured port.
+
+<SimpleTable
+  headers={["Command", "What it does"]}
+  colWidths={["260px", "auto"]}
+  rows={[
+    [<code key="tail">daemon8 tail</code>, "Stream observations in real time as they arrive. Filters: --kind, --severity, --origin. --no-color disables ANSI output."],
+    [<code key="query">daemon8 query</code>, "Query stored observations. Filters: --kind, --severity, --origin, --text, --since, --limit (default 50)."],
+    [<code key="conn">daemon8 connections</code>, "List active sources currently feeding the stream (browser, ADB devices, ingesting applications). Supports --json."],
+  ]}
+/>
+
+## Browser
+
+Drive the browser from a shell. These commands hit the same surface the agent uses through <Link to="/docs/$slug" params={{ slug: "debug-act" }}>debug_act</Link>.
+
+<SimpleTable
+  headers={["Command", "What it does"]}
+  colWidths={["260px", "auto"]}
+  rows={[
+    [<code key="tabs">daemon8 browser tabs</code>, "List monitored tabs with IDs and URLs."],
+    [<code key="eval">daemon8 browser eval EXPR [--tab ID]</code>, "Evaluate a JavaScript expression and print the result."],
+    [<code key="ss">daemon8 browser screenshot [--selector CSS] [--tab ID] [--output PATH]</code>, "Capture a PNG. Optionally scoped to a CSS selector. Default output: screenshot.png."],
+    [<code key="dom">daemon8 browser dom [SELECTOR] [--tab ID]</code>, "Print rendered DOM HTML for the full page or a selector."],
+    [<code key="ic">daemon8 browser inject-css CSS [--tab ID]</code>, "Inject a CSS string into a tab."],
+    [<code key="rc">daemon8 browser revert-css [--tab ID]</code>, "Remove all injected CSS from a tab."],
+    [<code key="perf">daemon8 browser perf [--tab ID]</code>, "Read performance counters from a tab."],
+    [<code key="sv">daemon8 browser set-viewport [--width W] [--height H] [--scale S] [--mobile] [--ua UA] [--tab ID]</code>, "Set viewport and enable mobile emulation. Defaults: 390x844 @ 3.0, mobile=true."],
+    [<code key="cv">daemon8 browser clear-viewport [--tab ID]</code>, "Restore a tab to desktop viewport defaults."],
+  ]}
+/>
+
+## Configuration
+
+<SimpleTable
+  headers={["Command", "What it does"]}
+  colWidths={["260px", "auto"]}
+  rows={[
+    [<code key="show">daemon8 config show [--json]</code>, "Print the fully resolved configuration including defaults."],
+    [<code key="path">daemon8 config path</code>, "Print the path to the config file daemon8 reads from."],
+    [<code key="set">daemon8 config set KEY VALUE</code>, "Set a config value by dotted key path (e.g. browser.endpoint, server.port). Validates the value before writing."],
+  ]}
+/>
+
+For the full key reference, see <Link to="/docs/$slug" params={{ slug: "configuration" }}>Configuration</Link>.
+
+## Agent enrollment
+
+<SimpleTable
+  headers={["Command", "What it does"]}
+  colWidths={["260px", "auto"]}
+  rows={[
+    [<code key="hook">daemon8 cli-hook</code>, <>Universal hook handler invoked by Claude Code, Cursor, Gemini CLI, GitHub Copilot, Codex, and Continue. Normally wired up by <code key="s">daemon8 init</code>, not run directly. See <Link to="/docs/$slug" params={{ slug: "cli-hook" }}>CLI Hook</Link>.</>],
+    [<code key="ch">daemon8 channel</code>, "Real-time alert relay for Claude Code. Experimental."],
+  ]}
+/>
+
+## Global flags
+
+`--config PATH` points at a specific config file instead of the default location. `--verbose` (or `-v`) raises the log level to debug for the current invocation. Both apply to every subcommand.
+
+<Callout>
+  The MCP tool surface is covered in <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>MCP Tools</Link>. The HTTP write path is in <Link to="/docs/$slug" params={{ slug: "http-ingest" }}>HTTP Ingest</Link>.
+</Callout>

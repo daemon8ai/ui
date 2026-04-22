@@ -1,0 +1,124 @@
+---
+title: "Storage and Streaming"
+navLabel: "Storage and Streaming"
+group: "reference"
+description: "How observations are persisted locally and how clients consume them as a live stream."
+order: 26
+---
+
+Observations are persisted to a local SQLite database and broadcast to live subscribers in parallel. The stream is a filtered view over the same local store, not a second copy. Everything stays on the machine the daemon is running on — nothing leaves it.
+
+Two consumption paths exist: point-in-time queries (`/api/observe`, `debug_observe`) and a live SSE stream (`/api/stream`). Both read the same observations, serialized the same way.
+
+## Storage
+
+SQLite with WAL. One table — `observations` — plus three indices covering the common filters.
+
+```sql
+CREATE TABLE observations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  timestamp_ns INTEGER NOT NULL,
+  severity TEXT NOT NULL,
+  kind_tag TEXT NOT NULL,
+  origin_json TEXT NOT NULL,
+  kind_json TEXT NOT NULL,
+  data TEXT NOT NULL,
+  source_file TEXT,
+  source_line INTEGER
+);
+CREATE INDEX idx_obs_ts          ON observations(timestamp_ns);
+CREATE INDEX idx_obs_severity_ts ON observations(severity, timestamp_ns);
+CREATE INDEX idx_obs_kind_ts     ON observations(kind_tag, timestamp_ns);
+```
+
+Pragmas applied on open:
+
+<SimpleTable
+  headers={["Pragma","Value"]}
+  rows={[
+    ["journal_mode","WAL"],
+    ["synchronous","NORMAL"],
+    ["temp_store","MEMORY"],
+    ["mmap_size","268435456 (256 MiB)"],
+    ["cache_size","-64000 (64 MiB)"],
+    ["auto_vacuum","INCREMENTAL"]
+  ]}
+  colWidths={["220px","auto"]}
+/>
+
+Legacy databases opened with `auto_vacuum=OFF` are migrated once via a full `VACUUM` on first open. After that, reclamation is incremental.
+
+The database file lives under the daemon's data directory. Run `daemon8 config` to see the resolved path on your machine.
+
+## Retention
+
+Retention is time-based and runs on a background task.
+
+<SimpleTable
+  headers={["Constant","Value","What it does"]}
+  rows={[
+    ["RETENTION_SECS","86400 (24 hours)","Observations older than this are deleted."],
+    ["CLEANUP_INTERVAL","28800 (8 hours)","How often the cleanup sweep runs."],
+    ["Incremental vacuum","200 pages per sweep","Reclaims disk space after deletions."],
+    ["WAL checkpoint","Every sweep","Truncates the WAL file after cleanup runs."]
+  ]}
+  colWidths={["220px","180px","auto"]}
+/>
+
+The first sweep waits one full `CLEANUP_INTERVAL` after startup, so a freshly started daemon does not immediately churn the WAL. There is no size-based eviction — only age.
+
+Retention is not currently user-configurable. The values above are compiled in.
+
+## Live streaming (SSE)
+
+`GET /api/stream` is a Server-Sent Events endpoint that emits every matching observation as it lands.
+
+<SimpleTable
+  headers={["Query param","Meaning"]}
+  rows={[
+    ["kinds","Comma-separated list of kind tags (log, query, http_exchange, ...)."],
+    ["severity_min","Minimum severity. trace, debug, info, warn, or error."],
+    ["origins","Comma-separated origin patterns: app, app:<name>, browser, browser:<tab_id>, device, device:<serial>."],
+    ["text_match","Substring match against the data payload."]
+  ]}
+  colWidths={["180px","auto"]}
+/>
+
+The stream runs in two phases:
+
+**Phase 1 — replay.** If the client sends a `Last-Event-ID` header, the server queries the store for observations with `id > Last-Event-ID` (up to 1000) and emits them first. Each emitted event has its observation id as the SSE `id` field, so reconnecting clients resume cleanly.
+
+**Phase 2 — live.** After replay, the handler reads from an in-memory broadcast channel and emits matching observations as they arrive. The subscription is opened *before* the replay query runs, so there is no gap between history and live; the handler dedups frames covered by replay.
+
+```
+event: message
+id: 1384
+data: {"id":1384,"origin":{...},"kind":{...},"severity":"info","timestamp_ns":...}
+```
+
+### Gap frames
+
+If the client's `Last-Event-ID` is older than the oldest id still in the store (cleanup has pruned the gap), the server emits a synthetic gap event before the replay:
+
+```
+event: gap
+data: {"since":42,"oldest_available":9871}
+```
+
+Clients that understand the event surface the loss to the user; clients that do not recognize the event type ignore it per the SSE spec. Either way, the server continues with replay from the oldest available id.
+
+## MCP alerts (`debug_subscribe`)
+
+`debug_subscribe` turns the stream into push notifications inside an MCP session. Matching observations are sent as a custom `notifications/claude/channel` message to the connected client.
+
+- Default filter: `severity >= warn`. Override by passing a `Filter` to the tool.
+- Throttle: at most one push per second per subscription. Bursts coalesce.
+- Transport: the same filter logic as `/api/stream`, delivered over MCP instead of SSE.
+
+See <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>MCP Tools</Link> for the full tool surface.
+
+## Related
+
+- <Link to="/docs/$slug" params={{ slug: "observation-schema" }}>Observation Schema</Link> — the shape of each event on the stream.
+- <Link to="/docs/$slug" params={{ slug: "configuration" }}>Configuration</Link> — data directory location and ingestion ports.
+- <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>MCP Tools</Link> — `debug_observe`, `debug_subscribe`, `debug_checkpoint`.

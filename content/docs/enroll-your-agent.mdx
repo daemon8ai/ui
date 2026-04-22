@@ -1,0 +1,153 @@
+---
+title: "Enroll Your Agent"
+navLabel: "Enroll Your Agent"
+group: "user-guide"
+description: "Wire your LLM coding agent's session lifecycle into the daemon8 stream with one command."
+order: 11
+---
+
+You have daemon8 installed and running. You have an AI coding tool installed — Claude Code, Cursor, Gemini CLI, Codex, Copilot, Continue, opencode. This page is how you connect the second to the first so every session your agent runs shows up on the stream, automatically.
+
+One command. No hand-editing of JSON.
+
+## What happens inside an LLM REPL
+
+Tools like Claude Code are REPLs where the LLM is the one reading and typing. You give it a prompt. It reads files, calls tools, writes code, responds. Then it waits for your next prompt and does the same thing again.
+
+At each step of that loop — the session starts, a tool is about to run, a tool just finished, the session ends — the REPL can fire a small shell command you register in its settings. That is a hook.
+
+Hooks are the one place the daemon can observe your agent without changing your agent. Wire `daemon8 cli-hook` into those moments and every session start, every tool call, every compaction, every session end becomes an observation on the local stream. Another agent — or you, from another terminal — can read it live.
+
+## The two things to decide
+
+`.daemon8-cli.toml` has several sections, but two of them are the only ones you actually choose:
+
+<SimpleTable
+  headers={["Key", "What it does", "Default"]}
+  colWidths={["180px", "auto", "180px"]}
+  rows={[
+    [<code key="slug">slug</code>, "The project's name on the stream. How observations from this project are tagged.", "The current directory name"],
+    [<code key="role">role_default</code>, <>A label your agent announces when it joins. One of <code key="s">solo</code>, <code key="w">worker</code>, <code key="q">queen</code>, <code key="wd">watchdog</code>. <code key="so">solo</code> for a single agent; <code key="q2">queen</code>/<code key="w2">worker</code> for coordinated multi-agent work; <code key="wd2">watchdog</code> for observe-only.</>, <code key="d">solo</code>],
+  ]}
+/>
+
+Everything else — intent patterns, distillation, per-tool overrides, heartbeat cadence — ships with sensible defaults. You can stop reading after `daemon8 init` completes and be fine. See <Link to="/docs/$slug" params={{ slug: "cli-hook-config" }}>CLI Hook Config</Link> when you want to change one.
+
+## Run `daemon8 init`
+
+At the root of the project you want to enroll:
+
+```bash
+daemon8 init
+```
+
+The command is interactive. It asks for the slug, asks for the role, writes `.daemon8-cli.toml`, then offers to register hooks in your CLI's settings. Say yes — that's the whole reason you're running it.
+
+What it looks like the first time:
+
+```text
+┌  daemon8 init
+│
+◇  Project slug
+│  my-project
+│
+◇  What role does this agent play?
+│  solo
+│
+◇  wrote /Users/me/my-project/.daemon8-cli.toml
+│
+◇  Register daemon8 Claude hooks for this project?
+│  Yes
+│
+◇  Where should the hooks be registered?
+│  local
+│
+◇  Which events should fire the hook?
+│  SessionStart, SessionEnd, UserPromptSubmit, PreToolUse, PostToolUse, PreCompact, Stop
+│
+◇  7 hook(s) registered at /Users/me/my-project/.claude/settings.local.json (7 added, 0 replaced)
+│
+└  next: start a new Claude session in this directory.
+```
+
+### Three scopes
+
+The "where should the hooks be registered?" step offers three choices. They differ in who the hook applies to:
+
+<SimpleTable
+  headers={["Scope", "File", "Applies to"]}
+  colWidths={["120px", "320px", "auto"]}
+  rows={[
+    [<code key="l">local</code>, <code key="lf">.claude/settings.local.json</code>, "This project only. Personal. Conventionally gitignored — not committed."],
+    [<code key="s">shared</code>, <code key="sf">.claude/settings.json</code>, "This project only. Committed. Applies to anyone who clones the repo."],
+    [<code key="g">global</code>, <code key="gf">~/.claude/settings.json</code>, "Every project on this machine."],
+  ]}
+/>
+
+Pick `local` the first time. You can re-run `daemon8 init` later to change it.
+
+### The non-interactive version
+
+Same result, one line, no prompts. Useful in scripts and CI:
+
+```bash
+daemon8 init --yes --install-hooks local
+```
+
+```text
+wrote /Users/me/my-project/.daemon8-cli.toml
+role: solo
+slug: my-project
+hooks: 7 registered at /Users/me/my-project/.claude/settings.local.json (7 added, 0 replaced)
+```
+
+`--yes` accepts the defaults without prompting. `--install-hooks` takes `local`, `shared`, or `global`. Without `--install-hooks`, only the `.daemon8-cli.toml` is written — hook registration is opt-in in non-interactive mode.
+
+## Immediately after
+
+Close the terminal you ran `init` in. Open a new Claude Code session in the same project directory. The `SessionStart` hook fires when the REPL boots and the first observation lands on the stream within a second or two.
+
+Ask your agent to look for it:
+
+```text
+debug_observe with origins=["app:daemon8-cli-hook"]
+```
+
+You should see `agent.joined` in the returned observations, something like:
+
+```json
+{
+  "origin": { "type": "application", "name": "daemon8-cli-hook" },
+  "kind":   { "type": "custom", "channel": "agent" },
+  "severity": "info",
+  "data": {
+    "event": "agent.joined",
+    "agent_id": "your-host:claude-code:1a2b3c",
+    "project_slug": "my-project",
+    "role": "solo",
+    "tool": "claude-code",
+    "model": "claude-opus-4-7"
+  }
+}
+```
+
+If you see that, you're enrolled. Every tool call in that session emits `agent.heartbeat`; when you end the session the hook emits `agent.departed`.
+
+## Then what
+
+**Coordinate with other agents.** Every session you start from now on announces itself with a role. See <Link to="/docs/$slug" params={{ slug: "multi-agent-coordination" }}>Multi-Agent Coordination</Link> for the patterns — filtering on role, ingesting notes between sessions, narrowing per-agent slices with `debug_subscribe`.
+
+**Tune what gets emitted.** Once you know you're getting observations, open `.daemon8-cli.toml` and browse the knobs — intent matching, distillation rules, per-tool overrides. The full schema is at <Link to="/docs/$slug" params={{ slug: "cli-hook-config" }}>CLI Hook Config</Link>.
+
+**Enroll another project.** Same flow. `cd` into the other project root, run `daemon8 init`, repeat. Each project gets its own `.daemon8-cli.toml` and its own hook registration.
+
+**Using a CLI other than Claude Code.** `daemon8 init` writes Claude Code's hook format today. For Cursor, Gemini CLI, Codex, Copilot, Continue, and opencode, wire `daemon8 cli-hook` into each tool's native hook mechanism by hand — event-name normalization is already handled inside the handler, so the same binary works for all of them. See <Link to="/docs/$slug" params={{ slug: "cli-hook" }}>CLI Hook</Link> for the event list and the env vars each tool sets.
+
+## If it does not work
+
+- **`agent.joined` does not arrive.** Run `daemon8 status`. If the daemon is not running, hooks still fire but have nowhere to post. Start it with `daemon8 install` or `daemon8 serve`.
+- **No hook fires at all.** The Claude Code session needs to have been started *after* `daemon8 init` ran. Exit and re-open.
+- **`init` refused to write to an existing `settings.local.json`.** The file exists but is not valid JSON. Fix or delete the file, then re-run. `daemon8 init` will never overwrite a malformed settings file — that's by design, because it would clobber any other hooks you have registered.
+- **You moved the `daemon8` binary.** The hook command in `settings.local.json` is an absolute path. Re-run with `daemon8 init --yes --install-hooks local --force-hooks` to refresh it.
+
+See <Link to="/docs/$slug" params={{ slug: "troubleshooting" }}>Troubleshooting</Link> for the full list.

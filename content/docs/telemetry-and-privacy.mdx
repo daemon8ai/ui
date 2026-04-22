@@ -1,0 +1,34 @@
+---
+title: "Telemetry And Privacy"
+navLabel: "Telemetry And Privacy"
+group: "user-guide"
+description: "Where observations live, how long they stay, and what the daemon does not send anywhere."
+order: 15
+---
+
+Nothing leaves the machine. Every observation the daemon captures — browser CDP events, device logcat, application HTTP ingest, agent writes — is stored in a local SQLite database on your disk. The daemon does not phone home.
+
+## What The Daemon Stores Locally
+
+- **Observations** in the SQLite database under the daemon's data directory. Run `daemon8 config path` to print the config file location; the database sits alongside it.
+- **Screenshots** captured via `debug_act` land as PNG files in the screenshot directory. `daemon8 config show` prints the resolved path.
+- **Config** in `config.toml` next to the database.
+- **Logs** in the daemon log directory, rotated daily with a bounded file count.
+
+## Retention
+
+Observations older than 24 hours are deleted by a cleanup task that runs every 8 hours. Screenshots follow the same 24-hour window. Data does not accumulate indefinitely, and the cleanup pass also triggers incremental vacuuming of the SQLite file so disk usage stays bounded. See <Link to="/docs/$slug" params={{ slug: "storage-and-streaming" }}>Storage and Streaming</Link> for the full mechanics.
+
+## What The Daemon Does Not Collect
+
+- No license check.
+- No install ID or `machine_id`.
+- No usage analytics, tool-call counters, or uptime pings.
+- No baseline or extended telemetry of any kind.
+- No phone-home of observation content, stream metadata, or configuration.
+
+## One Caveat
+
+`daemon8 doctor` runs a reachability probe against `daemon8.ai:443` to diagnose outbound network problems. It is a single TCP connect with a 3-second timeout — no HTTP request, no headers, no body. The probe only runs when you invoke `doctor`. If you never run `doctor`, the probe never happens.
+
+Your observations live on your machine.

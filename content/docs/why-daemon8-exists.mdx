@@ -1,0 +1,42 @@
+---
+title: "Why Daemon8 Exists"
+navLabel: "Why Daemon8 Exists"
+group: "start-here"
+description: "The old logging model assumed humans would always do the stitching."
+order: 1
+---
+
+Daemon8 is Runtime I/O for AI agents.
+
+Most developers don't need this problem explained to them. They've lived it. One service writes to stdout. Another writes to a file somewhere on disk. The browser has its own console. Mobile emulators write somewhere else again. Logging timestamps drift. Formats diverge. The pain is real because the sprawl is real.
+
+For a long time, this was normal. Humans were expected to know where the useful output lived, go get it, and carry it from place to place. That was the deal. The machine produced output. The human did the stitching.
+
+## The Old Deal
+
+Conventional logging made sense when humans were the only consumers. The cost of scattered output was accepted as part of the job. That assumption no longer holds. A modern session produces evidence across apps, browsers, devices, terminals, and agent conversations, and that evidence still lives in isolated surfaces.
+
+The result is not just messy. It is expensive. Time disappears into hunting, filtering, relaying, and re-explaining facts the system already knows. And time is the asset people never get back.
+
+## What Agents Expose
+
+Agentic development turned that waste from an annoyance into a structural problem. An agent can read a codebase in seconds, but it has no direct view into the runtime context flowing through the system at the same time.
+
+Once agents enter the workflow, the old model stops looking merely inconvenient and the entire foundation needs to be revisited from first principles.
+
+<SimpleTable
+  headers={["What Usually Happens", "What It Costs You"]}
+  rows={[
+    ["Runtime evidence is scattered across tools and files", "You spend time locating truth before you can use it"],
+    ["Agents only know what you manually relay", "Their help starts late and loses fidelity"],
+    ["Findings live inside one session at a time", "The next person or agent starts over"],
+  ]}
+/>
+
+## What Daemon8 Is
+
+Daemon8 is a local daemon that collects runtime observations from browser, device, and application runtime into one durable, queryable stream on your machine. Agents read and write that stream through MCP. The data stays local; you own every byte of it.
+
+<Callout>Daemon8 exists to remove the relay tax.</Callout>
+
+Continue to <Link to="/docs/$slug" params={{ slug: "from-logs-to-a-shared-stream" }}>From Logs To A Shared Stream</Link> for the mental model, or to <Link to="/docs/$slug" params={{ slug: "quickstart" }}>Quickstart</Link> to install the daemon and send your first `observation`.

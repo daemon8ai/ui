@@ -1,0 +1,83 @@
+---
+title: "CLI Hook"
+navLabel: "CLI Hook"
+group: "reference"
+description: "Universal hook handler that wires Claude Code, Cursor, Gemini, Codex, Copilot, and Continue into the stream."
+order: 28
+---
+
+Modern AI coding tools fire shell hooks around sessions and tool calls: session start, session end, pre tool use, post tool use, pre compact, post compact. Each tool names these events differently, but the idea is the same.
+
+`daemon8 cli-hook` is the universal handler you wire into each tool's settings. It reads the event as JSON on stdin, normalizes the event name across tools, resolves the project config, and POSTs a single observation to the running daemon.
+
+One hook surface, many tools.
+
+## Supported tools
+
+The handler recognizes events and session ids from:
+
+- Claude Code
+- Cursor
+- Gemini CLI
+- GitHub Copilot CLI
+- OpenAI Codex CLI
+- Continue
+- opencode
+
+Tool identity is passed with `--tool` when the host CLI can set it, otherwise the handler sniffs the environment (`CLAUDE_PROJECT_DIR`, `GEMINI_SESSION_ID`, `COPILOT_AGENT_SESSION_ID`, `CODEX_SESSION_ID`, `CURSOR_SESSION_ID`).
+
+## How it runs
+
+You do not invoke `cli-hook` directly. The host CLI invokes it once per hook event with a JSON payload on stdin:
+
+```json
+{
+  "session_id": "abc123",
+  "hook_event_name": "SessionStart",
+  "cwd": "/Users/me/my-project",
+  "model": "claude-opus-4-7"
+}
+```
+
+The handler:
+
+1. Walks up from `cwd` to find the nearest `.daemon8-cli.toml` (stops at the first `.git` directory or the filesystem root).
+2. Merges user config and project config.
+3. Normalizes the event to one of: joined, heartbeat, departed, pre-compact, post-compact. Unknown events are dropped.
+4. POSTs a single JSON observation to `http://127.0.0.1:9077/ingest` (the daemon address from the resolved config, overridable with `--daemon-url`).
+
+The handler has a synchronous fast path. Hook invocations must not block the host CLI on the network; the HTTP POST runs with a short timeout and failures are absorbed silently. If you need to see what went wrong, set `DAEMON8_HOOK_VERBOSE=1` and the handler prints a single-line diagnostic to stderr.
+
+## Setup
+
+Run `daemon8 init` at your project root. It walks through the two decisions that matter — slug and role — writes `.daemon8-cli.toml`, and registers the hook in your CLI's settings in one pass. See <Link to="/docs/$slug" params={{ slug: "enroll-your-agent" }}>Enroll Your Agent</Link> for the walkthrough.
+
+For any CLI `init` does not yet write settings for — currently Cursor, Gemini CLI, Codex, Copilot, Continue, opencode — register the handler by hand in that tool's native hook mechanism. The exact mechanism differs per tool (JSON, TOML, YAML, MCP-style). Consult each tool's documentation for how to register a command on SessionStart, SessionEnd, PreToolUse, PostToolUse, PreCompact, and PostCompact. In every case the command to register is:
+
+```bash
+daemon8 cli-hook
+```
+
+Add `--tool CLI_NAME` if your tool does not set a detectable env var, and `--verbose` while you are debugging.
+
+## What lands in the stream
+
+Every emitted observation shares this envelope:
+
+<SimpleTable
+  headers={["Field", "Value"]}
+  colWidths={["140px", "auto"]}
+  rows={[
+    [<code key="o">origin</code>, <code key="ov">{'Application { name: "daemon8-cli-hook" }'}</code>],
+    [<code key="k">kind</code>, <><code key="kv">Custom</code> with <code key="kc">channel: "agent"</code></>],
+    [<code key="s">severity</code>, <code key="sv">info</code>],
+  ]}
+/>
+
+The `data` payload carries the normalized event and the agent identity. Event names are one of `agent.joined`, `agent.heartbeat`, `agent.departed`, `agent.precompact`, `agent.postcompact`. The `agent_id` is `host:tool:session_id`. Join events additionally carry the tool, model, project slug, role, process id, and declared capabilities.
+
+See <Link to="/docs/$slug" params={{ slug: "observation-schema" }}>Observation Schema</Link> for the full structure.
+
+## Configuring behavior
+
+The hook's behavior — whether enrollment is on, which tools to skip, what role to declare, which features are active — is controlled by `.daemon8-cli.toml` in the project and optionally `cli.toml` in the user config directory. See <Link to="/docs/$slug" params={{ slug: "cli-hook-config" }}>CLI Hook Config</Link> for the schema.

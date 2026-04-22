@@ -1,0 +1,101 @@
+---
+title: "Quickstart"
+navLabel: "Quickstart"
+group: "start-here"
+description: "Install the daemon, connect your agent, write one observation, read it back."
+order: 3
+---
+
+Four steps, start to finish. Install the daemon, connect your agent, put one observation into the stream, read it back. The whole loop runs on your machine — nothing leaves it.
+
+## 1. Install Daemon8
+
+Daemon8 is open source and installed from source. Clone the repository, install the binary with Cargo, re-sign it on macOS, register the service, and run the setup wizard.
+
+### macOS
+
+```bash
+git clone https://github.com/daemon8ai/daemon8.git
+cd daemon8/daemon
+cargo install --path crates/daemon --force --locked
+codesign --force --sign - ~/.cargo/bin/daemon8
+daemon8 install
+daemon8 setup
+```
+
+macOS 14+ requires the `codesign` step after every rebuild. `launchd` caches the prior ad-hoc identity and will reject the new binary without it.
+
+### Linux
+
+```bash
+git clone https://github.com/daemon8ai/daemon8.git
+cd daemon8/daemon
+cargo install --path crates/daemon --force --locked
+daemon8 install
+daemon8 setup
+```
+
+`daemon8 install` writes a `systemd` user unit and starts it.
+
+### Windows
+
+```powershell
+git clone https://github.com/daemon8ai/daemon8.git
+cd daemon8\daemon
+cargo install --path crates/daemon --force --locked
+daemon8 install
+daemon8 setup
+```
+
+`daemon8 install` registers a `schtasks` job.
+
+`cargo install` builds the `daemon8` binary into `~/.cargo/bin`. `daemon8 install` writes the platform service definition — `launchd` on macOS, `systemd` on Linux, `schtasks` on Windows — and starts it. `daemon8 setup` walks through MCP client detection and confirms the stream is live on `http://localhost:9077`.
+
+Verify the service is running:
+
+```bash
+daemon8 status
+```
+
+## 2. Connect Your AI Tool
+
+`daemon8 setup` auto-configures Claude Code, Cursor, Continue.dev, and any MCP client over HTTP/SSE or stdio when it detects them. For any other MCP-compatible client, paste the matching block below into its config file.
+
+<McpConfigTabs />
+
+See <Link to="/docs/$slug" params={{ slug: "connect-your-ai-tool" }}>Connect Your AI Tool</Link> for the full client list and per-client config paths.
+
+## 3. Send One Observation
+
+Write one observation into the stream with `curl`.
+
+```bash
+curl -X POST http://localhost:9077/ingest \
+  -H "Content-Type: application/json" \
+  -d '{
+    "kind": "log",
+    "app": "quickstart",
+    "severity": "info",
+    "data": {
+      "message": "daemon8 quickstart reached the stream"
+    }
+  }'
+```
+
+The ingest endpoint responds with `202 Accepted` and the body `{'{"ok":true}'}`. That return code confirms the observation is in the stream.
+
+## 4. Ask Your Agent To Read It Back
+
+In Claude Code, Cursor, or any connected MCP client, send:
+
+```text
+Call debug_summary, then debug_observe with app="quickstart", and tell me whether the quickstart observation is in the stream.
+```
+
+The agent calls `debug_summary` for the health snapshot, then `debug_observe` with the `quickstart` origin filter, and quotes the observation back.
+
+## What Just Happened
+
+You wrote one piece of output into the local daemon. The daemon stored it as a durable observation. Your tool then queried that observation through MCP. That is the core loop: something writes, something reads, and the context no longer depends on copy-paste.
+
+<Callout>If this worked, continue to <Link to="/docs/$slug" params={{ slug: "connect-your-ai-tool" }}>Connect Your AI Tool</Link> or <Link to="/docs/$slug" params={{ slug: "send-application-telemetry" }}>Send Application Telemetry</Link>. If it did not, go to <Link to="/docs/$slug" params={{ slug: "troubleshooting" }}>Troubleshooting</Link>.</Callout>

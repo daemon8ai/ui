@@ -1,0 +1,129 @@
+---
+title: "MCP Tools"
+navLabel: "MCP Tools"
+group: "reference"
+description: "The eight MCP tools Daemon8 exposes to connected AI clients."
+order: 21
+---
+
+**The agent asks. The daemon answers.**
+
+Daemon8 exposes eight MCP tools grouped under two verbs. Query tools read the stream and describe what the daemon can see. Command tools act — driving the browser, overriding the Chrome endpoint. All eight ship in every install; if the daemon is running, every tool is registered and callable.
+
+## Transport
+
+The daemon supports MCP over HTTP/SSE or stdio, both at once. Stdio is the default when your MCP client launches `daemon8 mcp` as a child process. HTTP/SSE is served by the running daemon at `http://localhost:9077/mcp` as a stateful streamable session. `daemon8 setup` wires up whichever transport your client prefers.
+
+## Query
+
+Six tools for reading the stream and writing notes back into it.
+
+<SimpleTable
+  headers={["Tool", "Purpose"]}
+  colWidths={["220px", "auto"]}
+  rows={[
+    [<code key="do">debug_observe</code>, "Query the stored stream by kind, severity, origin, text, and checkpoint."],
+    [<code key="ds">debug_summary</code>, "Snapshot: observation count, recent error count, active channels, connected sources, overall health."],
+    [<code key="dc">debug_checkpoint</code>, "Mark the current position in the stream. Returns a checkpoint id to pair with since_checkpoint on debug_observe."],
+    [<code key="dco">debug_connections</code>, "List active sources currently feeding the stream: browser, device, and application runtime."],
+    [<code key="dsu">debug_subscribe</code>, "Register per-agent slices — a filter that pushes matching observations into this session as they arrive. Default filter matches severity >= warn."],
+    [<code key="di">debug_ingest</code>, <>Write an observation into the stream. Use for agent notes, findings, metrics, and cross-agent messages on the agent-to-agent bus. See <Link to="/docs/$slug" params={{ slug: "http-ingest" }}>HTTP Ingest</Link> for the full field reference.</>],
+  ]}
+/>
+
+## Command
+
+Two tools for acting through connected systems.
+
+<SimpleTable
+  headers={["Tool", "Purpose"]}
+  colWidths={["220px", "auto"]}
+  rows={[
+    [<code key="da">debug_act</code>, <>Browser and device command surface. Covers 15 actions across eval, screenshot, DOM, CSS, viewport, navigation, network, and storage. See <Link to="/docs/$slug" params={{ slug: "debug-act" }}>debug_act</Link>.</>],
+    [<code key="dcn">debug_connect</code>, "Override the Chrome DevTools Protocol endpoint. The daemon discovers and reconnects on its own; only call this when Chrome is on a non-default port."],
+  ]}
+/>
+
+## debug_observe
+
+Reads from the stored stream. All filters compose.
+
+<SimpleTable
+  headers={["Parameter", "Type", "Default", "Notes"]}
+  colWidths={["180px", "140px", "120px", "auto"]}
+  rows={[
+    [<code key="k">kinds</code>, "string[]", "all", <>Any of <code key="1">log</code>, <code key="2">query</code>, <code key="3">http_exchange</code>, <code key="4">exception</code>, <code key="5">js_exception</code>, <code key="6">lifecycle</code>, <code key="7">state_snapshot</code>, <code key="8">metric</code>, <code key="9">custom</code>.</>],
+    [<code key="sm">severity_min</code>, "string", "trace", <>One of <code key="s1">trace</code>, <code key="s2">debug</code>, <code key="s3">info</code>, <code key="s4">warn</code>, <code key="s5">error</code>.</>],
+    [<code key="o">origins</code>, "string[]", "all", <>Patterns: <code key="p1">app</code>, <code key="p2">app:name</code>, <code key="p3">browser</code>, <code key="p4">browser:tab_id</code>, <code key="p5">device</code>, <code key="p6">device:serial</code>.</>],
+    [<code key="t">text_match</code>, "string", "—", "Case-insensitive substring match against the serialized observation data."],
+    [<code key="sc">since_checkpoint</code>, "number", "—", "Return only observations whose id is greater than this checkpoint."],
+    [<code key="l">limit</code>, "number", "50", "Clamped to 500."],
+  ]}
+/>
+
+When `origins` includes a `browser` pattern, the response also carries a `browser_state` field so the caller knows whether Chrome is connected even when the result set is empty.
+
+## debug_summary
+
+No parameters. Returns the full runtime summary: total observation count, error count over the last sixty seconds, active custom channels, connected applications, browser tab count, device count, and a health enum (`ok`, `errors_detected`, `no_sources`). The response includes the running `daemon_version`. Start here when you do not yet know what the daemon can see.
+
+## debug_checkpoint
+
+No parameters. Returns `{ "checkpoint": <u64> }`. Record a checkpoint before taking an action, then pass it back as `since_checkpoint` on `debug_observe` to read exactly the delta.
+
+## debug_connections
+
+No parameters. Returns browser state and endpoint, plus a list of applications and devices currently producing observations. Use this to confirm a source is connected before relying on its output.
+
+## debug_ingest
+
+Writes one observation into the stream. The same JSON normalization used by HTTP ingest applies — see <Link to="/docs/$slug" params={{ slug: "http-ingest" }}>HTTP Ingest</Link> for field semantics.
+
+<SimpleTable
+  headers={["Parameter", "Type", "Default", "Notes"]}
+  colWidths={["180px", "140px", "120px", "auto"]}
+  rows={[
+    [<code key="a">app</code>, "string", <code key="ad">agent</code>, "Source name. Becomes the origin for filtering via origins=['app:name']."],
+    [<code key="k">kind</code>, "string", <code key="kd">log</code>, <>One of <code key="1">log</code>, <code key="2">metric</code>, <code key="3">query</code>, <code key="4">exception</code>, <code key="5">custom</code>. Unknown values become a custom observation whose channel equals the raw kind.</>],
+    [<code key="s">severity</code>, "string", <code key="sd">info</code>, "trace | debug | info | warn | error. Setting warn or error triggers a push to sessions subscribed at the default filter."],
+    [<code key="d">data</code>, "object", "required", "The observation payload. Use a message key for clean alert formatting."],
+    [<code key="c">channel</code>, "string", "—", "Required to address a custom-kind observation to a specific channel."],
+  ]}
+/>
+
+## debug_subscribe
+
+Registers per-agent slices: a per-session push filter. Matching observations arrive as they are stored, no polling required. Calling `debug_subscribe` with no parameters resets to the default filter.
+
+<SimpleTable
+  headers={["Parameter", "Type", "Default", "Notes"]}
+  colWidths={["180px", "140px", "120px", "auto"]}
+  rows={[
+    [<code key="k">kinds</code>, "string[]", "all", "Same vocabulary as debug_observe."],
+    [<code key="sm">severity_min</code>, "string", <code key="sd">warn</code>, "Default pushes warn and error only. Set to info or debug to receive everything at or above that level."],
+    [<code key="o">origins</code>, "string[]", "all", "app | app:name | browser | browser:tab_id | device | device:serial."],
+    [<code key="t">text_match</code>, "string", "—", "Case-insensitive substring match."],
+  ]}
+/>
+
+## debug_act
+
+Send one browser or device action per call. Sixteen-second default timeout on the browser path; thirty-second ceiling on the action itself. Full parameter reference and per-action response shape is on <Link to="/docs/$slug" params={{ slug: "debug-act" }}>its own page</Link>.
+
+## debug_connect
+
+Takes a single `endpoint` string (default `http://localhost:9222`). The daemon discovers, launches, and reconnects to Chrome without intervention, so this tool is only useful when Chrome runs on a non-standard debugging port. It does not help with reconnection — the daemon handles that on its own.
+
+## Recommended call order
+
+```text
+1. debug_summary          confirm what the daemon can see right now
+2. debug_checkpoint       mark the before state
+3. debug_observe          query the stream (pass since_checkpoint for deltas)
+4. debug_ingest           record a finding or message another agent
+5. debug_act              drive the browser or device
+```
+
+<Callout>
+  The HTTP write path mirrors <code>debug_ingest</code>. See <Link to="/docs/$slug" params={{ slug: "http-ingest" }}>HTTP Ingest</Link> for the endpoint, field reference, and normalization rules.
+</Callout>

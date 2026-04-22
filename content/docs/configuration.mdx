@@ -1,0 +1,134 @@
+---
+title: "Configuration"
+navLabel: "Configuration"
+group: "reference"
+description: "The daemon8 config file, every key, defaults, and how to change them."
+order: 24
+---
+
+The daemon reads a TOML config at startup. For the 99% case, `daemon8 setup` writes a working file and you never touch it. When you do need to change something, the key reference is below.
+
+Print the path on your machine with `daemon8 config path`. Typical locations:
+
+- macOS: `~/Library/Application Support/dev.daemon8.daemon8/config.toml`
+- Linux: `~/.config/daemon8/config.toml`
+- Windows: `%APPDATA%\daemon8\daemon8\config.toml`
+
+## Resolution order
+
+Values are merged last-wins:
+
+1. Compiled-in defaults
+2. The TOML file at the path above (or the file passed to `--config`)
+3. Environment variables with the `DAEMON8_` prefix, using `__` for nesting
+
+Example env override: `DAEMON8_SERVER__PORT=9090 daemon8 serve` starts on port 9090 regardless of the file.
+
+## `[server]`
+
+<SimpleTable
+  headers={["Key", "Type", "Default", "Notes"]}
+  colWidths={["200px", "120px", "180px", "auto"]}
+  rows={[
+    ["port", "u16", "9077", "The port the daemon listens on for HTTP ingest, the MCP endpoint, and the API."],
+    ["host", "IP address", "127.0.0.1", "Bind address. Must be a literal IP, not a hostname."],
+  ]}
+/>
+
+## `[storage]`
+
+<SimpleTable
+  headers={["Key", "Type", "Default", "Notes"]}
+  colWidths={["200px", "120px", "180px", "auto"]}
+  rows={[
+    ["path", "path", "(platform data dir)", "SQLite database file. Empty string means use the default."],
+    ["screenshot_path", "path", "(next to db)", "Directory for screenshots captured by browser actions. Empty string means use the default."],
+  ]}
+/>
+
+## `[browser]`
+
+<SimpleTable
+  headers={["Key", "Type", "Default", "Notes"]}
+  colWidths={["200px", "120px", "180px", "auto"]}
+  rows={[
+    ["auto_connect", "bool", "false", "Connect to the browser at startup instead of on first tool use."],
+    ["endpoint", "string", "http://localhost:9222", "Chrome DevTools Protocol endpoint. Must start with http:// or https://."],
+    ["reconnect_interval_secs", "u64", "5", "Initial reconnect delay after the browser drops."],
+    ["max_reconnect_interval_secs", "u64", "30", "Upper bound on the exponential backoff."],
+    ["path", "path", "(none)", "Absolute path to the browser executable. Used when the daemon launches the browser itself."],
+  ]}
+/>
+
+## `[mcp]`
+
+<SimpleTable
+  headers={["Key", "Type", "Default", "Notes"]}
+  colWidths={["200px", "120px", "180px", "auto"]}
+  rows={[
+    ["stdio", "bool", "true", "Serve MCP over stdio when invoked by an MCP client with a real pipe on stdin."],
+    ["http", "bool", "false", "Reserved. The daemon always serves MCP at /mcp on the HTTP port; this key is kept for forward compatibility."],
+  ]}
+/>
+
+## `[adb]`
+
+<SimpleTable
+  headers={["Key", "Type", "Default", "Notes"]}
+  colWidths={["200px", "120px", "180px", "auto"]}
+  rows={[
+    ["enabled", "bool", "true", "Watch for Android and Fire TV devices via ADB."],
+    ["server_addr", "host:port", "127.0.0.1:5037", "Local ADB server address. Must be a literal IPv4 address, not a hostname."],
+    ["scan_interval_secs", "u64", "10", "Device discovery scan interval."],
+  ]}
+/>
+
+## `[ingestion.udp]`
+
+<SimpleTable
+  headers={["Key", "Type", "Default", "Notes"]}
+  colWidths={["200px", "120px", "180px", "auto"]}
+  rows={[
+    ["enabled", "bool", "false", "Accept UDP ingest packets."],
+    ["bind", "host:port", "127.0.0.1:9078", "UDP bind address."],
+    ["max_packet", "usize", "65536", "Maximum accepted packet size in bytes."],
+  ]}
+/>
+
+## `[ingestion.unix]`
+
+<SimpleTable
+  headers={["Key", "Type", "Default", "Notes"]}
+  colWidths={["200px", "120px", "180px", "auto"]}
+  rows={[
+    ["enabled", "bool", "false", "Accept ingest over a Unix domain socket. Unavailable on Windows."],
+    ["path", "path", "/tmp/daemon8.sock", "Socket path. Empty string means use the default."],
+  ]}
+/>
+
+## `[logging]`
+
+<SimpleTable
+  headers={["Key", "Type", "Default", "Notes"]}
+  colWidths={["200px", "120px", "180px", "auto"]}
+  rows={[
+    ["level", "enum", "info", "One of trace, debug, info, warn, error."],
+    ["file", "path", "(platform logs dir)", "Directory for daily-rotated log files. Empty string uses the default."],
+    ["stderr", "bool", "true", "Also emit logs to stderr. Required for foreground debugging."],
+    ["max_log_files", "usize", "5", "Number of rotated log files to keep."],
+  ]}
+/>
+
+## Changing config
+
+The most common workflow is `daemon8 config set`, which validates the value and writes the key atomically:
+
+```bash
+daemon8 config set browser.endpoint http://localhost:9333
+```
+
+`daemon8 config show` prints the resolved configuration. Pass `--json` for machine-readable output. Most keys require restarting the daemon to take effect; the CLI prints a reminder when it detects that the daemon is running.
+
+<Callout>
+  Prefer <code>daemon8 setup</code> for first-time configuration. It handles browser detection, MCP client wiring, and service install in one pass.
+</Callout>

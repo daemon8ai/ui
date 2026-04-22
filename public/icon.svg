@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 16 16">
+  <style>
+    .bg { fill: #0B1120; }
+    .pf { fill: #D4D4D4; }
+    .ps { stroke: #D4D4D4; }
+    @media (prefers-color-scheme: light) {
+      .bg { fill: #FFFFFF; }
+      .pf { fill: #1A1A1A; }
+      .ps { stroke: #1A1A1A; }
+    }
+  </style>
+  <rect width="16" height="16" class="bg"/>
+  <circle cx="8" cy="4.5" r="3.0" class="pf"/>
+  <circle cx="8" cy="4.5" r="1.6" class="bg"/>
+  <circle cx="8" cy="11.5" r="3.0" class="pf"/>
+  <circle cx="8" cy="11.5" r="1.6" class="bg"/>
+  <line x1="8" y1="0" x2="8" y2="16" stroke-width="1.0" class="ps"/>
+</svg>

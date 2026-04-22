@@ -1,0 +1,101 @@
+---
+title: "Observation Schema"
+navLabel: "Observation Schema"
+group: "reference"
+description: "The shape of a single observation and every variant it can carry."
+order: 25
+---
+
+An observation is one structured event in the stream. Every source produces the same shape: browser events from CDP, device logs from ADB, application runtime over HTTP ingest, and notes written through `debug_ingest`.
+
+The shape is defined by the `Observation` struct and its three enums: `Origin`, `ObservationKind`, and `Severity`. The daemon stores observations in this shape and returns them in this shape.
+
+## Top-level fields
+
+<SimpleTable
+  headers={["Field","Type","Notes"]}
+  rows={[
+    ["id","u64","Monotonic sequence number assigned by the store on insert. Starts at 0 in freshly built observations; the real id is assigned when it lands."],
+    ["origin","Origin","Where the observation came from. Tagged union — see below."],
+    ["kind","ObservationKind","What kind of event this is. Tagged union — see below."],
+    ["data","JSON value","Free-form payload. Kind-specific fields live inside the kind variant; this is everything else."],
+    ["severity","Severity","trace, debug, info, warn, or error."],
+    ["source_location","SourceLocation?","Optional file / line / function that emitted the observation."],
+    ["timestamp_ns","u64","Unix nanoseconds, captured at construction on the source side."]
+  ]}
+  colWidths={["200px","200px","auto"]}
+/>
+
+## Severity
+
+<SimpleTable
+  headers={["Severity","When to use"]}
+  rows={[
+    ["trace","Fine-grained step-by-step detail. Off by default in most consumers."],
+    ["debug","Operational detail useful while diagnosing a specific problem."],
+    ["info","Expected, noteworthy events. Request completed, job ran, device attached."],
+    ["warn","Unexpected but recoverable. Retry, degraded path, deprecation."],
+    ["error","Failure. Something did not do its job."]
+  ]}
+  colWidths={["140px","auto"]}
+/>
+
+Filters compare by level, so `severity_min = "warn"` matches both `warn` and `error`.
+
+## Origin
+
+`Origin` is a tagged union with three variants.
+
+```json
+{ "type": "application", "name": "checkout-api" }
+{ "type": "browser",     "tab_id": "tab-abc", "url": "https://example.com/cart" }
+{ "type": "device",      "serial": "emulator-5554", "platform": "android" }
+```
+
+`Application` carries only the app name you configured in the SDK. `Browser` carries the CDP tab id plus the page URL at event time. `Device` carries the ADB serial plus the detected `platform`, which is either `android` or `vega` (Amazon Fire TV). See <Link to="/docs/$slug" params={{ slug: "devices" }}>Devices</Link> for how platform detection works.
+
+## Kinds
+
+<SimpleTable
+  headers={["Kind","Payload","Typical source"]}
+  rows={[
+    ["log","(none; message lives in data)","application or browser console"],
+    ["query","sql: string, duration_ms: f64","application SDK (database layer)"],
+    ["http_exchange","method, url, status?, duration_ms?","application or browser network"],
+    ["exception","message, trace?","application SDK (thrown error)"],
+    ["state_snapshot","label: string","application (named capture)"],
+    ["metric","name: string, value: f64","application (numeric sample)"],
+    ["custom","channel: string","anywhere (user-defined grouping)"],
+    ["js_exception","message, line?, column?","browser CDP (uncaught JS error)"],
+    ["lifecycle","event_name: string, frame_id: string","browser CDP (page lifecycle)"]
+  ]}
+  colWidths={["180px","280px","auto"]}
+/>
+
+On the wire, kinds serialize with a `type` tag:
+
+```json
+{ "type": "http_exchange", "method": "GET", "url": "/api/users", "status": 200, "duration_ms": 42.0 }
+{ "type": "query", "sql": "SELECT 1", "duration_ms": 3.5 }
+{ "type": "lifecycle", "event_name": "ready", "frame_id": "frame-1" }
+```
+
+Fields declared on the variant are part of `kind`. Anything else you want to attach goes in `data`.
+
+## Checkpoints
+
+```rust
+pub struct Checkpoint(pub u64);
+```
+
+A checkpoint is a monotonic sequence marker — nothing more than the highest observation id the store has handed out. `debug_checkpoint` returns one, and `debug_observe` accepts `since_checkpoint` to fetch only observations newer than that marker. Checkpoints are the resume mechanism for incremental queries.
+
+<Callout>
+The `id` on `Observation` and the `u64` inside `Checkpoint` are the same number space. An observation with `id = 42` is covered by a checkpoint of `42` or higher.
+</Callout>
+
+## Related
+
+- <Link to="/docs/$slug" params={{ slug: "http-ingest" }}>HTTP Ingest</Link> — the wire format you POST to get observations into the stream.
+- <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>MCP Tools</Link> — `debug_observe`, `debug_ingest`, `debug_checkpoint`.
+- <Link to="/docs/$slug" params={{ slug: "storage-and-streaming" }}>Storage and Streaming</Link> — how observations are persisted and replayed.

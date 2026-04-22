@@ -1,0 +1,98 @@
+---
+title: "Monitor Browser Activity"
+navLabel: "Monitor Browser Activity"
+group: "user-guide"
+description: "How the daemon connects to Chrome, what the browser source captures, and how to verify the connection."
+order: 13
+---
+
+Daemon8 attaches to Chrome over the Chrome DevTools Protocol (CDP) and streams what the browser sees — console output, network traffic, JavaScript exceptions, and page lifecycle events — into the same stream as application runtime. The browser becomes one more source with a single origin: `browser`.
+
+**No extension install, no browser restart, no context-menu loop.** The daemon speaks CDP directly to the already-running Chrome.
+
+One connection, one filter. `debug_observe` with `origin: "browser"` returns everything the page produced; filter further by `kind` to isolate network from console from exceptions.
+
+## What The Browser Source Captures
+
+<SimpleTable
+  headers={["Kind", "What It Carries"]}
+  rows={[
+    ["log", "Every console.log / console.info / console.warn / console.error call with its severity preserved"],
+    ["http_exchange", "Method, URL, status, duration, and failure reason for every request the page made"],
+    ["js_exception", "Unhandled exceptions with message, line, column, and stack trace"],
+    ["lifecycle", "Page navigation, frame attachment, and document lifecycle transitions"],
+  ]}
+  colWidths={["160px", "auto"]}
+/>
+
+All four kinds land in the stream under `origin: "browser"`. See <Link to="/docs/$slug" params={{ slug: "observation-schema" }}>Observation Schema</Link> for the full field set.
+
+## Turning It On
+
+Chrome must be running with remote debugging exposed on port 9222. Most developer setups already do this; if yours does not, launch Chrome with the flag directly.
+
+### macOS
+
+```bash
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222
+```
+
+Quit all existing Chrome windows first — a second instance with a different flag set will not share the debugging port.
+
+### Linux
+
+```bash
+google-chrome --remote-debugging-port=9222
+```
+
+Adjust the binary name for your distribution (`chromium`, `chromium-browser`, etc).
+
+### Windows
+
+```powershell
+& "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222
+```
+
+Close all Chrome windows before launching — a running Chrome without the flag will block the new one from binding.
+
+The endpoint is configurable via `browser.endpoint` in `config.toml`; the default is `http://localhost:9222`. See <Link to="/docs/$slug" params={{ slug: "configuration" }}>Configuration</Link>.
+
+## Verifying The Connection
+
+Run `daemon8 connections` from the shell, or call `debug_connections` from a connected agent. Both return every open tab the daemon currently sees with its URL and target ID. `debug_summary` reports whether the browser source is active and how many observations it has contributed.
+
+```bash
+daemon8 connections
+```
+
+If no browser appears, Chrome is not running with `--remote-debugging-port=9222`. The daemon reports this as an absent source, not a failure — it simply has nothing to attach to.
+
+## How The CDP Connection Works
+
+The daemon speaks CDP directly over a raw WebSocket with `serde_json::Value` payloads. No third-party CDP wrapper sits in the path, which is why the connection survives Chrome version drift that regularly breaks wrapped clients.
+
+Reconnect is automatic and exponential: the first retry fires after 5 seconds, subsequent retries double up to a 30-second ceiling, and the delay resets the moment a connection succeeds. Both bounds are configurable through `browser.reconnect_interval_secs` and `browser.max_reconnect_interval_secs`.
+
+## Chrome Stability
+
+Chrome can degrade over long-running DevTools and remote-debugging sessions. This is a Chrome reality, not a Daemon8-specific defect. When the session goes quiet, quit Chrome and relaunch it with the flag — the daemon re-establishes the connection on its next backoff cycle without intervention.
+
+## Acting Through The Browser
+
+The same CDP connection powers browser actions. `debug_act` exposes screenshot capture, DOM inspection, JavaScript evaluation, CSS injection, navigation, and storage reads — all fifteen actions ship with every install. See <Link to="/docs/$slug" params={{ slug: "debug-act" }}>debug_act</Link> for the full surface.
+
+## Devices
+
+Android and Amazon Vega devices are a separate source with the same observation shape, streamed through `adb logcat` (Android) or `loggingctl` (Vega). They land under `origin: "device:<serial>"` and interleave cleanly with browser and application-runtime output in a single `debug_observe` call. See <Link to="/docs/$slug" params={{ slug: "devices" }}>Devices</Link>.
+
+## Using Checkpoints With Browser Data
+
+Mark the stream position before an action, take the action, then query everything that arrived during the window. This replaces "scroll through console + network tabs" with one scoped read.
+
+```text
+1. debug_checkpoint                     — capture the stream position
+2. [click the button / submit the form / navigate]
+3. debug_observe with since_checkpoint  — exactly what the browser emitted during that flow
+```
+
+Combine `since_checkpoint` with `origin: "browser"` and `kind: "http_exchange"` to isolate the network calls triggered by a single user action — the output a developer would otherwise piece together by watching DevTools in real time.
