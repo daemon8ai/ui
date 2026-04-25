@@ -6,6 +6,8 @@ description: "Install the daemon, connect your agent, write one observation, rea
 order: 3
 ---
 
+These docs cover daemon8 v0.1.
+
 Four steps, start to finish. Install the daemon, connect your agent, put one observation into the stream, read it back. The whole loop runs on your machine — nothing leaves it.
 
 ## 1. Install Daemon8
@@ -24,6 +26,8 @@ daemon8 setup
 ```
 
 macOS 14+ requires the `codesign` step after every rebuild. `launchd` caches the prior ad-hoc identity and will reject the new binary without it.
+
+macOS binaries are signed with Developer ID Application: jonathan havens (4WT356MQPL). Notarization is not yet built (deferred to v0.2), so macOS Gatekeeper may show a warning on first launch. Linux and Windows binaries ship unsigned.
 
 ### Linux
 
@@ -89,10 +93,10 @@ The ingest endpoint responds with `202 Accepted` and the body `{'{"ok":true}'}`.
 In Claude Code, Cursor, or any connected MCP client, send:
 
 ```text
-Call debug_summary, then debug_observe with app="quickstart", and tell me whether the quickstart observation is in the stream.
+Call status, then query_observations with app="quickstart", and tell me whether the quickstart observation is in the stream.
 ```
 
-The agent calls `debug_summary` for the health snapshot, then `debug_observe` with the `quickstart` origin filter, and quotes the observation back.
+The agent calls `status` for the health snapshot, then `query_observations` with the `quickstart` origin filter, and quotes the observation back.
 
 ## What Just Happened
 

@@ -11,7 +11,7 @@ Nothing leaves the machine. Every observation the daemon captures — browser CD
 ## What The Daemon Stores Locally
 
 - **Observations** in the SQLite database under the daemon's data directory. Run `daemon8 config path` to print the config file location; the database sits alongside it.
-- **Screenshots** captured via `debug_act` land as PNG files in the screenshot directory. `daemon8 config show` prints the resolved path.
+- **Screenshots** captured via `issue_command` land as PNG files in the screenshot directory. `daemon8 config show` prints the resolved path.
 - **Config** in `config.toml` next to the database.
 - **Logs** in the daemon log directory, rotated daily with a bounded file count.
 

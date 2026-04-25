@@ -36,14 +36,14 @@ For Vega devices, the daemon streams VVD logs via `loggingctl log -f -o short_pr
 
 ## Screenshots
 
-`debug_act` with `action = "screenshot"` accepts an optional `device_serial` (plus an optional `device_platform`) to target a connected device instead of the browser.
+`issue_command` with `action = "screenshot"` accepts an optional `device_serial` (plus an optional `device_platform`) to target a connected device instead of the browser.
 
 Two capture paths exist:
 
 - **Host window capture** for emulators running on the same machine as the daemon. Requires a build with the `xcap` feature enabled. When available, it is tried first because it avoids the overhead of an ADB round trip.
 - **ADB screencap** for physical devices, and as the fallback when host window capture is not available or did not find a matching window.
 
-See <Link to="/docs/$slug" params={{ slug: "debug-act" }}>debug_act</Link> for the full screenshot arguments and response shape.
+See <Link to="/docs/$slug" params={{ slug: "issue-command" }}>issue_command</Link> for the full screenshot arguments and response shape.
 
 ## Verifying attachment
 
@@ -57,12 +57,12 @@ daemon8 connections
 curl -s http://127.0.0.1:9077/api/connections
 ```
 
-Or from a connected MCP client, call `debug_connections`.
+Or from a connected MCP client, call `list_connections`.
 
 Each entry includes the source kind (`device`), the name (the device serial), and the observation count attributed to it.
 
 ## Related
 
 - <Link to="/docs/$slug" params={{ slug: "observation-schema" }}>Observation Schema</Link> — the shape of `Device` origin and the kinds devices produce.
-- <Link to="/docs/$slug" params={{ slug: "debug-act" }}>debug_act</Link> — screenshots and other actions.
+- <Link to="/docs/$slug" params={{ slug: "issue-command" }}>issue_command</Link> — screenshots and other actions.
 - <Link to="/docs/$slug" params={{ slug: "configuration" }}>Configuration</Link> — `[adb]` settings for server address, scan interval, and enablement.

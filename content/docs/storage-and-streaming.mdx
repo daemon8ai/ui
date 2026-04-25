@@ -8,7 +8,7 @@ order: 26
 
 Observations are persisted to a local SQLite database and broadcast to live subscribers in parallel. The stream is a filtered view over the same local store, not a second copy. Everything stays on the machine the daemon is running on — nothing leaves it.
 
-Two consumption paths exist: point-in-time queries (`/api/observe`, `debug_observe`) and a live SSE stream (`/api/stream`). Both read the same observations, serialized the same way.
+Two consumption paths exist: point-in-time queries (`/api/observe`, `query_observations`) and a live SSE stream (`/api/stream`). Both read the same observations, serialized the same way.
 
 ## Storage
 
@@ -107,13 +107,14 @@ data: {"since":42,"oldest_available":9871}
 
 Clients that understand the event surface the loss to the user; clients that do not recognize the event type ignore it per the SSE spec. Either way, the server continues with replay from the oldest available id.
 
-## MCP alerts (`debug_subscribe`)
+## MCP alerts (`subscribe_observations`)
 
-`debug_subscribe` turns the stream into push notifications inside an MCP session. Matching observations are sent as a custom `notifications/claude/channel` message to the connected client.
+`subscribe_observations` configures per-session push filters. Matching observations are sent as `notifications/message` log events with MCP-spec severity mapping (trace/debug to debug, info to info, warn to warning, error to error).
 
-- Default filter: `severity >= warn`. Override by passing a `Filter` to the tool.
+- Default filter: `severity >= warn`. Override by passing filter parameters to the tool.
 - Throttle: at most one push per second per subscription. Bursts coalesce.
 - Transport: the same filter logic as `/api/stream`, delivered over MCP instead of SSE.
+- **Ecosystem limitation (v0.1):** no major MCP client opens the persistent GET SSE stream required by MCP Streamable HTTP to receive these notifications. Use `query_observations` with `since_checkpoint` as the reliable polling workaround.
 
 See <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>MCP Tools</Link> for the full tool surface.
 
@@ -121,4 +122,4 @@ See <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>MCP Tools</Link> for t
 
 - <Link to="/docs/$slug" params={{ slug: "observation-schema" }}>Observation Schema</Link> — the shape of each event on the stream.
 - <Link to="/docs/$slug" params={{ slug: "configuration" }}>Configuration</Link> — data directory location and ingestion ports.
-- <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>MCP Tools</Link> — `debug_observe`, `debug_subscribe`, `debug_checkpoint`.
+- <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>MCP Tools</Link> — `query_observations`, `subscribe_observations`, `create_checkpoint`.

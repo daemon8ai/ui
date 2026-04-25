@@ -3,7 +3,9 @@
 </p>
 
 <p align="center">
-  Runtime I/O for AI agents.
+  The admin layer for AI agents.<br>
+  Observe. Act. Coordinate.<br>
+  One convention for runtime output and real-time context.
 </p>
 
 <p align="center">
@@ -12,9 +14,12 @@
   <a href="mailto:mail@daemon8.ai">mail@daemon8.ai</a>
 </p>
 
+> [!TIP]
+> Daemon8 is 'closing the loop' - agents will be able to debug anything in one MCP call - that's the objective! Care to help ensure this type of power stays open source?? Consider starring the repo!
+
 ---
 
-What's here: the site, newsletter signup, and docs for daemon8.ai. The Rust daemon itself — the runtime observation layer — lives in its own repo at [github.com/daemon8ai/daemon8](https://github.com/daemon8ai/daemon8). Contributions welcome.
+What's here: the site, newsletter signup, and docs for daemon8.ai. The Rust daemon itself — the admin layer for AI agents — lives in its own repo at [github.com/daemon8ai/daemon8](https://github.com/daemon8ai/daemon8). Contributions welcome.
 
 ## Run locally
 

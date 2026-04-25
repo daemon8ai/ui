@@ -23,7 +23,7 @@ const installCommand = `cargo install --git https://github.com/daemon8ai/daemon8
 daemon8 setup`;
 
 const mcpSnippet = `// ask
-● daemon8 - debug_observe (MCP)({ since: "5m", kind: ["console", "network", "exception"], severity: ["warn", "error"] })
+● daemon8 - query_observations (MCP)({ since: "5m", kind: ["console", "network", "exception"], severity: ["warn", "error"] })
 
 // answer
   ⎿ [
@@ -179,11 +179,14 @@ export function HomepagePage() {
           <div className="max-w-[640px]">
             <Wordmark size="lg" />
             <h1 className="mt-9 text-[clamp(1.6rem,5.2vw,3.25rem)] leading-[1.02] tracking-[-0.03em] text-d8-text max-w-[560px]">
-              Runtime I/O for AI agents.
+              Unified I/O for AI Agents.
             </h1>
             <p className="mt-6 text-[15px] md:text-[18px] text-d8-text-muted leading-relaxed max-w-[560px]">
-              One local stream for browser, device, and application runtime
-              &mdash; queryable from the terminal your agents already use.
+              See browser console/network, adb, and app logs in one place.
+              <br />
+              <span className="text-[13px] md:text-[15px]">
+                (more logging sources to come, e.g. nginx, redis, all popular programming langs/frameworks, etc.)
+              </span>
             </p>
             <InstallBlock />
           </div>
@@ -192,19 +195,22 @@ export function HomepagePage() {
 
       <section className="px-4 py-16 md:py-20 border-t border-d8-border">
         <div className="mx-auto max-w-[960px]">
-          <SectionLabel>THE STREAM</SectionLabel>
+          <SectionLabel>MCP INTERFACE</SectionLabel>
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] items-start">
             <div>
               <h2 className="text-[26px] md:text-[36px] tracking-[-0.03em] text-d8-text max-w-[520px]">
-                Agents coordinate naturally.
+                One question.
+                <br />
+                One well-informed answer.
               </h2>
               <p className="mt-5 text-[15px] md:text-[16px] text-d8-text-muted leading-relaxed max-w-[520px]">
-                Browser, device, and application runtime converge into one
-                local store &mdash; one shape, one query surface. When multiple
-                agents share that stream, coordination stops being overhead - requiring human intervention.
+                Eight MCP tools sit on top of the stream. Query recent
+                observations, snapshot health, checkpoint a position, drive the
+                browser, ingest from inside the agent loop. Works with Claude
+                Code, Cursor, Continue.dev, and any MCP client over HTTP.
               </p>
             </div>
-            <ProofTerminal />
+            <McpSnippet />
           </div>
         </div>
       </section>
@@ -284,22 +290,19 @@ export function HomepagePage() {
 
       <section className="px-4 py-16 md:py-20 border-t border-d8-border">
         <div className="mx-auto max-w-[960px]">
-          <SectionLabel>MCP INTERFACE</SectionLabel>
+          <SectionLabel>THE STREAM</SectionLabel>
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] items-start">
             <div>
               <h2 className="text-[26px] md:text-[36px] tracking-[-0.03em] text-d8-text max-w-[520px]">
-                One question.
-                <br />
-                One well-informed answer.
+                Agents coordinate naturally.
               </h2>
               <p className="mt-5 text-[15px] md:text-[16px] text-d8-text-muted leading-relaxed max-w-[520px]">
-                Eight MCP tools sit on top of the stream. Query recent
-                observations, snapshot health, checkpoint a position, drive the
-                browser, ingest from inside the agent loop. Works with Claude
-                Code, Cursor, Continue.dev, and any MCP client over HTTP.
+                Browser, device, and application runtime converge into one
+                local store &mdash; one shape, one query surface. When multiple
+                agents share that stream, coordination stops being overhead - requiring human intervention.
               </p>
             </div>
-            <McpSnippet />
+            <ProofTerminal />
           </div>
         </div>
       </section>

@@ -6,7 +6,7 @@ description: "The old logging model assumed humans would always do the stitching
 order: 1
 ---
 
-Daemon8 is Runtime I/O for AI agents.
+Daemon8 is the admin layer for AI agents.
 
 Most developers don't need this problem explained to them. They've lived it. One service writes to stdout. Another writes to a file somewhere on disk. The browser has its own console. Mobile emulators write somewhere else again. Logging timestamps drift. Formats diverge. The pain is real because the sprawl is real.
 
@@ -35,7 +35,7 @@ Once agents enter the workflow, the old model stops looking merely inconvenient 
 
 ## What Daemon8 Is
 
-Daemon8 is a local daemon that collects runtime observations from browser, device, and application runtime into one durable, queryable stream on your machine. Agents read and write that stream through MCP. The data stays local; you own every byte of it.
+Daemon8 is a local daemon that lets you see browser console/network, adb, and app logs in one place. Agents read and write that stream through MCP. The data stays local; you own every byte of it.
 
 <Callout>Daemon8 exists to remove the relay tax.</Callout>
 

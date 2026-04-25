@@ -9,7 +9,7 @@ type SearchResult = SearchEntry & { score: number }
 
 const DOCS_PAGES = [...allDocs].sort((a, b) => a.order - b.order)
 
-const QUICK_LINK_SLUGS = ['quickstart', 'connect-your-ai-tool', 'mcp-tools', 'http-ingest', 'debug-act']
+const QUICK_LINK_SLUGS = ['quickstart', 'connect-your-ai-tool', 'mcp-tools', 'http-ingest', 'issue-command']
 
 const GROUP_LABEL: Record<string, string> = {
   'start-here': 'Start Here',

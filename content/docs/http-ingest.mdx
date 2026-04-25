@@ -47,6 +47,11 @@ Every recognized top-level meta field is extracted from the JSON before the rest
     [<code key="f">file</code>, "string", "no", "—", "Source file path. Stored on the observation's source_location."],
     [<code key="l">line</code>, "number", "no", "0", "Line number. Stored on source_location alongside file."],
     [<code key="fn">function</code>, "string", "no", "—", "Function name. Stored on source_location alongside file."],
+    [<code key="ci">correlation_id</code>, "string", "no", "—", "Groups related observations across services. Filterable via query_observations."],
+    [<code key="pi">parent_id</code>, "number", "no", "—", "ID of a parent observation for building causal trees."],
+    [<code key="tg">tags</code>, "string[]", "no", "—", "Arbitrary labels. Filterable via query_observations (all listed tags must be present)."],
+    [<code key="si">session_id</code>, "string", "no", "—", "Agent or user session identifier."],
+    [<code key="ni">node_id</code>, "string", "no", "—", "Daemon instance identifier. Auto-set to system hostname if omitted."],
   ]}
 />
 
@@ -71,4 +76,4 @@ Both carry the same JSON shape as HTTP. Payloads flow through the same normaliza
 
 ## What happens next
 
-The observation lands in the store with an assigned id and timestamp. From that moment it is queryable via <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>debug_observe</Link>, counted by `debug_summary`, and pushed to any `debug_subscribe` session whose filter matches — including the default `severity >= warn` subscription every fresh session opens with.
+The observation lands in the store with an assigned id and timestamp. From that moment it is queryable via <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>query_observations</Link>, counted by `status`, and pushed to any `subscribe_observations` session whose filter matches — including the default `severity >= warn` subscription every fresh session opens with.

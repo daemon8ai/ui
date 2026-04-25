@@ -2,11 +2,11 @@
 title: "From Logs To A Shared Stream"
 navLabel: "From Logs To A Shared Stream"
 group: "start-here"
-description: "One local stream for browser, device, and application runtime — the single surface developers and agents use to reason about a running system."
+description: "See browser console/network, adb, and app logs in one place."
 order: 2
 ---
 
-Daemon8 treats runtime output as one class of evidence. Browser, device, and application runtime land in one local stream — durable, queryable, on your machine. Any number of agents, or the developer, read from that stream directly. No relay required.
+Daemon8 treats runtime output as one class of evidence. Browser console/network, adb, and app logs land in one place — durable, queryable, on your machine. Any number of agents, or the developer, read from that stream directly. No relay required.
 
 ## The Shift
 
@@ -33,7 +33,7 @@ Browser, device, and application runtime are the three sources. Agents write int
     ["Browser (Chrome CDP)", "The daemon connects to Chrome over the DevTools Protocol. Console output and network traffic flow in automatically. Reconnects on Chrome restart."],
     ["Device (ADB)", <>A connected Android or Amazon Vega device is picked up at daemon start; <code>logcat</code> or <code>loggingctl</code> output becomes part of the stream. No device means ADB is silently ignored.</>],
     ["Application runtime", <>Any application, service, or script POSTs JSON to <code>http://localhost:9077/ingest</code>. Language-agnostic. See <Link to="/docs/$slug" params={{ slug: "http-ingest" }}>HTTP Ingest</Link>.</>],
-    ["Agents (MCP)", <>Agents write with <code>debug_ingest</code>. See <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>MCP Tools</Link>.</>],
+    ["Agents (MCP)", <>Agents write with <code>ingest_observation</code>. See <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>MCP Tools</Link>.</>],
   ]}
 />
 
@@ -41,11 +41,11 @@ Browser, device, and application runtime are the three sources. Agents write int
 
 Every connected agent reads and writes the same stream. The three core verbs:
 
-- `debug_observe` — read observations, filtered by kind, severity, origin, text match, or a checkpoint ID.
-- `debug_ingest` — write a new observation into the stream from inside an agent loop, so findings survive the session.
-- `debug_subscribe` — filter the real-time alert channel so `warn` and `error` observations are pushed into the agent's session as they arrive.
+- `query_observations` — read observations, filtered by kind, severity, origin, text match, or a checkpoint ID.
+- `ingest_observation` — write a new observation into the stream from inside an agent loop, so findings survive the session.
+- `subscribe_observations` — filter the real-time alert channel so `warn` and `error` observations are pushed into the agent's session as they arrive.
 
-A checkpoint is a position marker. An agent calls `debug_checkpoint`, takes an action, then calls `debug_observe` with `since_checkpoint` to see only what happened because of that action. Mark, act, compare — the checkpoint is how an agent isolates cause from background noise.
+A checkpoint is a position marker. An agent calls `create_checkpoint`, takes an action, then calls `query_observations` with `since_checkpoint` to see only what happened because of that action. Mark, act, compare — the checkpoint is how an agent isolates cause from background noise.
 
 ## How The Browser Source Works
 
@@ -55,8 +55,8 @@ For the practical setup and verification steps, see <Link to="/docs/$slug" param
 
 ## How Checkpoints Work
 
-A checkpoint marks the current position in the stream. Pass the checkpoint ID to `debug_observe` via `since_checkpoint` to receive only observations that arrived after it. Because every source writes into the same stream, a single checkpoint filters browser, device, and application-runtime output — along with prior agent writes — together.
+A checkpoint marks the current position in the stream. Pass the checkpoint ID to `query_observations` via `since_checkpoint` to receive only observations that arrived after it. Because every source writes into the same stream, a single checkpoint filters browser, device, and application-runtime output — along with prior agent writes — together.
 
-<Callout>Mark with <code>debug_checkpoint</code> before a change, read with <code>debug_observe(since_checkpoint=...)</code> after — that is how an agent sees exactly what its action caused.</Callout>
+<Callout>Mark with <code>create_checkpoint</code> before a change, read with <code>query_observations(since_checkpoint=...)</code> after — that is how an agent sees exactly what its action caused.</Callout>
 
 Continue to <Link to="/docs/$slug" params={{ slug: "quickstart" }}>Quickstart</Link> to install the daemon and write your first observation.

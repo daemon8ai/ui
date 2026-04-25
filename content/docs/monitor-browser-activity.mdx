@@ -10,7 +10,7 @@ Daemon8 attaches to Chrome over the Chrome DevTools Protocol (CDP) and streams w
 
 **No extension install, no browser restart, no context-menu loop.** The daemon speaks CDP directly to the already-running Chrome.
 
-One connection, one filter. `debug_observe` with `origin: "browser"` returns everything the page produced; filter further by `kind` to isolate network from console from exceptions.
+One connection, one filter. `query_observations` with `origin: "browser"` returns everything the page produced; filter further by `kind` to isolate network from console from exceptions.
 
 ## What The Browser Source Captures
 
@@ -59,7 +59,7 @@ The endpoint is configurable via `browser.endpoint` in `config.toml`; the defaul
 
 ## Verifying The Connection
 
-Run `daemon8 connections` from the shell, or call `debug_connections` from a connected agent. Both return every open tab the daemon currently sees with its URL and target ID. `debug_summary` reports whether the browser source is active and how many observations it has contributed.
+Run `daemon8 connections` from the shell, or call `list_connections` from a connected agent. Both return every open tab the daemon currently sees with its URL and target ID. `status` reports whether the browser source is active and how many observations it has contributed.
 
 ```bash
 daemon8 connections
@@ -79,20 +79,20 @@ Chrome can degrade over long-running DevTools and remote-debugging sessions. Thi
 
 ## Acting Through The Browser
 
-The same CDP connection powers browser actions. `debug_act` exposes screenshot capture, DOM inspection, JavaScript evaluation, CSS injection, navigation, and storage reads — all fifteen actions ship with every install. See <Link to="/docs/$slug" params={{ slug: "debug-act" }}>debug_act</Link> for the full surface.
+The same CDP connection powers browser-side commands. `issue_command` exposes screenshot capture, DOM inspection, JavaScript evaluation, CSS injection, navigation, and storage reads — plus device screenshots when `device_serial` is supplied. See <Link to="/docs/$slug" params={{ slug: "issue-command" }}>issue_command</Link> for the full surface.
 
 ## Devices
 
-Android and Amazon Vega devices are a separate source with the same observation shape, streamed through `adb logcat` (Android) or `loggingctl` (Vega). They land under `origin: "device:<serial>"` and interleave cleanly with browser and application-runtime output in a single `debug_observe` call. See <Link to="/docs/$slug" params={{ slug: "devices" }}>Devices</Link>.
+Android and Amazon Vega devices are a separate source with the same observation shape, streamed through `adb logcat` (Android) or `loggingctl` (Vega). They land under `origin: "device:<serial>"` and interleave cleanly with browser and application-runtime output in a single `query_observations` call. See <Link to="/docs/$slug" params={{ slug: "devices" }}>Devices</Link>.
 
 ## Using Checkpoints With Browser Data
 
 Mark the stream position before an action, take the action, then query everything that arrived during the window. This replaces "scroll through console + network tabs" with one scoped read.
 
 ```text
-1. debug_checkpoint                     — capture the stream position
+1. create_checkpoint                     — capture the stream position
 2. [click the button / submit the form / navigate]
-3. debug_observe with since_checkpoint  — exactly what the browser emitted during that flow
+3. query_observations with since_checkpoint  — exactly what the browser emitted during that flow
 ```
 
 Combine `since_checkpoint` with `origin: "browser"` and `kind: "http_exchange"` to isolate the network calls triggered by a single user action — the output a developer would otherwise piece together by watching DevTools in real time.

@@ -49,10 +49,10 @@ For the exhaustive field list including `channel`, `file`, `line`, and batch ing
 Ask your agent to read the observation you just wrote:
 
 ```text
-Use debug_observe with origins=["app:checkout"] and tell me whether you see a "payment attempt started" log.
+Use query_observations with origins=["app:checkout"] and tell me whether you see a "payment attempt started" log.
 ```
 
-The agent calls `debug_observe` against the local daemon and returns the matching slice.
+The agent calls `query_observations` against the local daemon and returns the matching slice.
 
 ## Language Examples
 

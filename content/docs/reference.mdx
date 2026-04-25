@@ -30,7 +30,7 @@ The `daemon8` binary manages the local service, exposes the stream, and drives t
   rows={[
     [<code key="setup">daemon8 setup</code>, "Interactive setup wizard. Picks a browser, writes MCP client config for detected tools, installs the service, and runs a health check. Run again any time to reconfigure."],
     [<code key="doctor">daemon8 doctor [--fix]</code>, "Diagnose common environment and configuration issues. Pass --fix to attempt automatic repairs."],
-    [<code key="init">daemon8 init [--role ROLE] [--slug SLUG] [--force] [-y|--yes] [--install-hooks local|shared|global] [--force-hooks]</code>, <>Interactive wizard. Walks you through slug and role, writes <code key="f">.daemon8-cli.toml</code>, and optionally registers hooks in your CLI's settings. With <code key="y">--yes</code> it skips the wizard and accepts defaults; hook registration stays opt-in via <code key="i">--install-hooks</code>. See <Link to="/docs/$slug" params={{ slug: "enroll-your-agent" }}>Enroll Your Agent</Link> and <Link to="/docs/$slug" params={{ slug: "cli-hook-config" }}>CLI Hook Config</Link>.</>],
+    [<code key="init">daemon8 init [--role ROLE] [--slug SLUG] [--force]</code>, <>Write a <code key="f">.daemon8-cli.toml</code> at the current directory. <code key="r">--role</code> sets the agent role (queen, worker, solo, watchdog; default solo). <code key="s">--slug</code> overrides the project slug (default: directory name). <code key="fo">--force</code> overwrites an existing config. See <Link to="/docs/$slug" params={{ slug: "enroll-your-agent" }}>Enroll Your Agent</Link> and <Link to="/docs/$slug" params={{ slug: "cli-hook-config" }}>CLI Hook Config</Link>.</>],
     [<code key="comp">daemon8 completions SHELL</code>, "Generate shell completions. Supported shells: bash, elvish, fish, powershell, zsh."],
   ]}
 />
@@ -45,7 +45,7 @@ These commands talk to the running daemon over HTTP on the configured port.
   headers={["Command", "What it does"]}
   colWidths={["260px", "auto"]}
   rows={[
-    [<code key="tail">daemon8 tail</code>, "Stream observations in real time as they arrive. Filters: --kind, --severity, --origin. --no-color disables ANSI output."],
+    [<code key="tail">daemon8 tail</code>, "Stream observations in real time as they arrive. Filters: --kind, --severity, --origin, --text. All filters are server-side (passed as SSE query parameters). --no-color disables ANSI output."],
     [<code key="query">daemon8 query</code>, "Query stored observations. Filters: --kind, --severity, --origin, --text, --since, --limit (default 50)."],
     [<code key="conn">daemon8 connections</code>, "List active sources currently feeding the stream (browser, ADB devices, ingesting applications). Supports --json."],
   ]}
@@ -53,12 +53,13 @@ These commands talk to the running daemon over HTTP on the configured port.
 
 ## Browser
 
-Drive the browser from a shell. These commands hit the same surface the agent uses through <Link to="/docs/$slug" params={{ slug: "debug-act" }}>debug_act</Link>.
+Drive the browser from a shell. These commands hit the browser side of the same surface the agent uses through <Link to="/docs/$slug" params={{ slug: "issue-command" }}>issue_command</Link>.
 
 <SimpleTable
   headers={["Command", "What it does"]}
   colWidths={["260px", "auto"]}
   rows={[
+    [<code key="conn">daemon8 browser connect [ENDPOINT]</code>, "Connect to a Chrome DevTools endpoint. Default: http://localhost:9222."],
     [<code key="tabs">daemon8 browser tabs</code>, "List monitored tabs with IDs and URLs."],
     [<code key="eval">daemon8 browser eval EXPR [--tab ID]</code>, "Evaluate a JavaScript expression and print the result."],
     [<code key="ss">daemon8 browser screenshot [--selector CSS] [--tab ID] [--output PATH]</code>, "Capture a PNG. Optionally scoped to a CSS selector. Default output: screenshot.png."],
@@ -68,6 +69,14 @@ Drive the browser from a shell. These commands hit the same surface the agent us
     [<code key="perf">daemon8 browser perf [--tab ID]</code>, "Read performance counters from a tab."],
     [<code key="sv">daemon8 browser set-viewport [--width W] [--height H] [--scale S] [--mobile] [--ua UA] [--tab ID]</code>, "Set viewport and enable mobile emulation. Defaults: 390x844 @ 3.0, mobile=true."],
     [<code key="cv">daemon8 browser clear-viewport [--tab ID]</code>, "Restore a tab to desktop viewport defaults."],
+    [<code key="nav">daemon8 browser navigate URL [--tab ID]</code>, "Navigate to a URL and wait for page load. Returns the resolved page title."],
+    [<code key="nc">daemon8 browser network-conditions [PRESET] [--tab ID]</code>, "Simulate network conditions. Presets: offline, slow-3g, fast-3g, restore. Default: restore."],
+    [<code key="scl">daemon8 browser storage-clear [TYPES] [--tab ID]</code>, "Clear storage for the current page origin. TYPES: all (default), or comma-separated: cookies, local_storage, session_storage, indexeddb, cache_storage, service_workers."],
+    [<code key="si">daemon8 browser storage-inspect [--tab ID]</code>, "Inspect localStorage, sessionStorage, and cookies for the tab origin."],
+    [<code key="sset">daemon8 browser storage-set KEY VALUE [--store-type TYPE] [--tab ID]</code>, "Write a storage value. --store-type: localstorage (default), sessionstorage, cookie."],
+    [<code key="eap">daemon8 browser element-at-point X Y [--tab ID]</code>, "Identify the element at a viewport CSS-pixel coordinate."],
+    [<code key="nt">daemon8 browser new-tab [URL]</code>, "Open a new browser tab. Default URL: about:blank. Returns the new tab ID."],
+    [<code key="ct">daemon8 browser close-tab TAB_ID</code>, "Close a tab by ID (from daemon8 browser tabs)."],
   ]}
 />
 

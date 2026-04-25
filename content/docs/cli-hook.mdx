@@ -50,9 +50,9 @@ The handler has a synchronous fast path. Hook invocations must not block the hos
 
 ## Setup
 
-Run `daemon8 init` at your project root. It walks through the two decisions that matter — slug and role — writes `.daemon8-cli.toml`, and registers the hook in your CLI's settings in one pass. See <Link to="/docs/$slug" params={{ slug: "enroll-your-agent" }}>Enroll Your Agent</Link> for the walkthrough.
+Run `daemon8 init` at your project root to write `.daemon8-cli.toml` with the project slug and role. Then register `daemon8 cli-hook` in your CLI's hook settings — see <Link to="/docs/$slug" params={{ slug: "enroll-your-agent" }}>Enroll Your Agent</Link> for the copy-paste JSON block for Claude Code and notes on other tools.
 
-For any CLI `init` does not yet write settings for — currently Cursor, Gemini CLI, Codex, Copilot, Continue, opencode — register the handler by hand in that tool's native hook mechanism. The exact mechanism differs per tool (JSON, TOML, YAML, MCP-style). Consult each tool's documentation for how to register a command on SessionStart, SessionEnd, PreToolUse, PostToolUse, PreCompact, and PostCompact. In every case the command to register is:
+For any CLI, the command to register on each hook event is:
 
 ```bash
 daemon8 cli-hook

@@ -6,7 +6,7 @@ description: "The shape of a single observation and every variant it can carry."
 order: 25
 ---
 
-An observation is one structured event in the stream. Every source produces the same shape: browser events from CDP, device logs from ADB, application runtime over HTTP ingest, and notes written through `debug_ingest`.
+An observation is one structured event in the stream. Every source produces the same shape: browser events from CDP, device logs from ADB, application runtime over HTTP ingest, and notes written through `ingest_observation`.
 
 The shape is defined by the `Observation` struct and its three enums: `Origin`, `ObservationKind`, and `Severity`. The daemon stores observations in this shape and returns them in this shape.
 
@@ -21,7 +21,12 @@ The shape is defined by the `Observation` struct and its three enums: `Origin`, 
     ["data","JSON value","Free-form payload. Kind-specific fields live inside the kind variant; this is everything else."],
     ["severity","Severity","trace, debug, info, warn, or error."],
     ["source_location","SourceLocation?","Optional file / line / function that emitted the observation."],
-    ["timestamp_ns","u64","Unix nanoseconds, captured at construction on the source side."]
+    ["timestamp_ns","u64","Unix nanoseconds, captured at construction on the source side."],
+    ["correlation_id","string?","Trace a request across services. Filterable via query_observations."],
+    ["parent_id","u64?","Build observation trees — parent to child causal chains."],
+    ["tags","string[]?","Arbitrary string labels for filtering. query_observations requires all listed tags."],
+    ["session_id","string?","Group observations by agent or user session."],
+    ["node_id","string?","Daemon instance identifier. Auto-stamped with system hostname on insert if omitted."]
   ]}
   colWidths={["200px","200px","auto"]}
 />
@@ -88,7 +93,7 @@ Fields declared on the variant are part of `kind`. Anything else you want to att
 pub struct Checkpoint(pub u64);
 ```
 
-A checkpoint is a monotonic sequence marker — nothing more than the highest observation id the store has handed out. `debug_checkpoint` returns one, and `debug_observe` accepts `since_checkpoint` to fetch only observations newer than that marker. Checkpoints are the resume mechanism for incremental queries.
+A checkpoint is a monotonic sequence marker — nothing more than the highest observation id the store has handed out. `create_checkpoint` returns one, and `query_observations` accepts `since_checkpoint` to fetch only observations newer than that marker. Checkpoints are the resume mechanism for incremental queries.
 
 <Callout>
 The `id` on `Observation` and the `u64` inside `Checkpoint` are the same number space. An observation with `id = 42` is covered by a checkpoint of `42` or higher.
@@ -97,5 +102,5 @@ The `id` on `Observation` and the `u64` inside `Checkpoint` are the same number 
 ## Related
 
 - <Link to="/docs/$slug" params={{ slug: "http-ingest" }}>HTTP Ingest</Link> — the wire format you POST to get observations into the stream.
-- <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>MCP Tools</Link> — `debug_observe`, `debug_ingest`, `debug_checkpoint`.
+- <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>MCP Tools</Link> — `query_observations`, `ingest_observation`, `create_checkpoint`.
 - <Link to="/docs/$slug" params={{ slug: "storage-and-streaming" }}>Storage and Streaming</Link> — how observations are persisted and replayed.

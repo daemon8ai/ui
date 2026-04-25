@@ -7,7 +7,10 @@ import {
   useRouterState,
 } from '@tanstack/react-router'
 import appCss from '#/styles/app.css?url'
+import { brandAssets } from '#/lib/brandAssets'
 import { jsonLd, organizationSchema, webSiteSchema, softwareSourceCodeSchema } from '#/lib/structured-data'
+
+const SITE_URL = 'https://daemon8.ai'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -15,27 +18,27 @@ export const Route = createRootRoute({
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { name: 'theme-color', content: '#0B1120' },
-      { name: 'description', content: 'Runtime I/O for AI agents. One local stream for browser, device, and application runtime — queryable from the terminal your agents already use.' },
+      { name: 'description', content: 'Unified I/O for AI Agents. See browser console/network, adb, and app logs in one place.' },
       { property: 'og:site_name', content: 'Daemon8' },
       { property: 'og:type', content: 'website' },
-      { property: 'og:image', content: 'https://daemon8.ai/og-image-v2.png' },
+      { property: 'og:image', content: `${SITE_URL}${brandAssets.ogImagePng}` },
       { property: 'og:image:width', content: '1200' },
       { property: 'og:image:height', content: '630' },
       { name: 'twitter:card', content: 'summary_large_image' },
-      { name: 'twitter:image', content: 'https://daemon8.ai/og-image-v2.png' },
+      { name: 'twitter:image', content: `${SITE_URL}${brandAssets.ogImagePng}` },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       jsonLd(organizationSchema()) as any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       jsonLd(webSiteSchema()) as any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       jsonLd(softwareSourceCodeSchema()) as any,
-      { title: 'Daemon8 — Runtime I/O for AI agents' },
+      { title: 'Daemon8 — Unified I/O for AI Agents' },
     ],
     links: [
       { rel: 'stylesheet', href: appCss },
-      { rel: 'icon', href: '/favicon.ico', sizes: '32x32' },
-      { rel: 'icon', href: '/icon.svg', type: 'image/svg+xml' },
-      { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+      { rel: 'icon', href: brandAssets.faviconIco, sizes: '32x32' },
+      { rel: 'icon', href: brandAssets.faviconSvg, type: 'image/svg+xml' },
+      { rel: 'apple-touch-icon', href: brandAssets.appleTouchIcon },
       { rel: 'manifest', href: '/manifest.json' },
     ],
   }),

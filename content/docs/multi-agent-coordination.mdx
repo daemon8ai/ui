@@ -12,16 +12,16 @@ The point is not to make multi-agent work sound exotic. The point is to remove r
 
 ## A Small Coordination Loop
 
-Agent A writes a finding into a named channel with `debug_ingest`. Agent B filters `debug_observe` on that channel and picks up the note.
+Agent A writes a finding into a named channel with `ingest_observation`. Agent B filters `query_observations` on that channel and picks up the note.
 
 ```text
 Agent A:
-debug_ingest with app="agent-a", channel="checkout-bug",
+ingest_observation with app="agent-a", channel="checkout-bug",
   data={ "message": "Checkout times out when payment callback exceeds 3s",
          "file": "api/checkout.py:142" }
 
 Agent B:
-debug_observe with channel="checkout-bug"
+query_observations with channel="checkout-bug"
   -> returns agent-a's finding plus anything else ingested on that channel
 ```
 
@@ -29,7 +29,7 @@ The ingested observation is durable, searchable by `channel`, `app`, or `text_ma
 
 ## Per-Agent Slices
 
-`debug_subscribe` narrows the agent-to-agent bus to per-agent slices: each agent subscribes to the slice of the stream it cares about — a channel, an app origin, a severity threshold. Matching observations are pushed into the session as they land; the rest stay out of the way. Narrow scope, less noise, faster loops.
+`subscribe_observations` narrows the agent-to-agent bus to per-agent slices: each agent subscribes to the slice of the stream it cares about — a channel, an app origin, a severity threshold. Matching observations are pushed into the session as they land; the rest stay out of the way. Narrow scope, less noise, faster loops.
 
 ## Roles
 
@@ -53,4 +53,4 @@ See <Link to="/docs/$slug" params={{ slug: "cli-hook" }}>CLI Hook</Link> for the
 
 ## Keep The Goal Simple
 
-Coordination is whatever agents do when they can read each other's output. The stream provides the read; the rest is convention. Start with one channel and one `debug_ingest` call. The protocol evolves from there.
+Coordination is whatever agents do when they can read each other's output. The stream provides the read; the rest is convention. Start with one channel and one `ingest_observation` call. The protocol evolves from there.

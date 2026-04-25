@@ -1,14 +1,14 @@
 ---
-title: "debug_act"
-navLabel: "debug_act"
+title: "issue_command"
+navLabel: "issue_command"
 group: "reference"
-description: "Browser and device command surface exposed by the debug_act MCP tool."
+description: "Browser and device command surface exposed by the issue_command MCP tool."
 order: 22
 ---
 
-`debug_act` is the Command surface, peer to the Query tools on <Link to="/docs/$slug" params={{ slug: "mcp-tools" }}>MCP Tools</Link>. One action per call, routed over CDP to the browser or over ADB to a device. The `screenshot` action accepts a `device_serial` to route the capture through ADB instead of the browser. Every action ships with every install.
+`issue_command` sends one command to a connected target. Browser commands route over CDP. Device screenshots route over ADB when `device_serial` is present. Every action ships with every install.
 
-Every action takes an optional `tab_id`. Omit it to target the first tab the daemon finds. Call the `list_tabs` action first if you need a specific one.
+Browser actions take an optional `tab_id`. Omit it to target the first tab the daemon finds. Call the `list_tabs` action first if you need a specific one.
 
 ## Actions
 
@@ -31,6 +31,8 @@ Every action takes an optional `tab_id`. Omit it to target the first tab the dae
     [<code key="sse">storage_set</code>, <><code key="1">tab_id?</code>, <code key="2">store_type</code>, <code key="3">storage_key</code>, <code key="4">storage_value?</code></>, <>Write a key/value. store_type is one of <code key="st1">localstorage</code>, <code key="st2">sessionstorage</code>, <code key="st3">cookie</code>.</>],
     [<code key="sc">storage_clear</code>, <><code key="1">tab_id?</code>, <code key="2">storage_types?</code></>, <>Clear storage. storage_types is a comma-separated list, or <code key="a">all</code>. Members: <code key="m1">cookies</code>, <code key="m2">local_storage</code>, <code key="m3">session_storage</code>, <code key="m4">indexeddb</code>, <code key="m5">cache_storage</code>, <code key="m6">service_workers</code>. Default: <code key="a2">all</code>.</>],
     [<code key="eap">element_at_point</code>, <><code key="1">tab_id?</code>, <code key="2">x</code>, <code key="3">y</code></>, "Return the element at a viewport CSS-pixel coordinate. Locate interactive targets before firing eval_js."],
+    [<code key="nt">new_tab</code>, <code key="1">url?</code>, "Open a new browser tab. Default URL is about:blank. Returns the new tab_id. Uses CDP Target.createTarget."],
+    [<code key="ct">close_tab</code>, <code key="1">tab_id</code>, "Close a tab by tab_id. Uses CDP Target.closeTarget. Bypasses the window.close() security restriction. tab_id is required."],
   ]}
 />
 
@@ -165,14 +167,30 @@ Response: `{ "cleared": true }`.
 
 Response: the element descriptor at those coordinates.
 
+## new_tab
+
+```json
+{ "action": "new_tab", "url": "https://example.com" }
+```
+
+Response: `{ "tab_id": "ABCDEF1234567890" }`.
+
+## close_tab
+
+```json
+{ "action": "close_tab", "tab_id": "ABCDEF1234567890" }
+```
+
+Response: `{ "closed": true }`.
+
 ## Typical call sequence
 
 ```text
-1. debug_act list_tabs                          find the tab_id
-2. debug_checkpoint                             mark the before state
-3. debug_act navigate { tab_id, url }           trigger the flow
-4. debug_observe { since_checkpoint }           read the resulting stream delta
-5. debug_act screenshot { tab_id }              capture the current state
+1. issue_command list_tabs                 find the tab_id
+2. create_checkpoint                        mark the before state
+3. issue_command navigate { tab_id, url }  trigger the flow
+4. query_observations { since_checkpoint }  read the resulting stream delta
+5. issue_command screenshot { tab_id }     capture the current state
 ```
 
 <Callout>

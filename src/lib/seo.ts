@@ -1,3 +1,5 @@
+import { brandAssets } from '#/lib/brandAssets'
+
 type SeoOptions = {
   title: string
   description?: string
@@ -7,8 +9,8 @@ type SeoOptions = {
 
 const SITE_NAME = 'Daemon8'
 const SITE_URL = 'https://daemon8.ai'
-const DEFAULT_DESCRIPTION = 'Runtime I/O for AI agents. One local stream for browser, device, and application runtime — queryable from the terminal your agents already use.'
-const DEFAULT_IMAGE = '/og-image-v2.png'
+const DEFAULT_DESCRIPTION = 'Unified I/O for AI Agents. See browser console/network, adb, and app logs in one place.'
+const DEFAULT_IMAGE = brandAssets.ogImagePng
 
 export function seo({ title, description, path, image }: SeoOptions) {
   const fullTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`

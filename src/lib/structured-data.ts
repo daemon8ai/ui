@@ -1,8 +1,10 @@
+import { brandAssets } from '#/lib/brandAssets'
+
 const SITE_URL = 'https://daemon8.ai'
 const SITE_NAME = 'Daemon8'
 const REPO_URL = 'https://github.com/daemon8ai/daemon8'
 const LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`
-const DEFAULT_DESCRIPTION = 'Runtime I/O for AI agents. One local stream for browser, device, and application runtime — queryable from the terminal your agents already use.'
+const DEFAULT_DESCRIPTION = 'Unified I/O for AI Agents. See browser console/network, adb, and app logs in one place.'
 
 export function jsonLd(schema: Record<string, unknown>) {
   return { 'script:ld+json': { '@context': 'https://schema.org', ...schema } }
@@ -14,7 +16,7 @@ export function organizationSchema() {
     '@id': `${SITE_URL}/#organization`,
     name: SITE_NAME,
     url: SITE_URL,
-    logo: { '@type': 'ImageObject', url: `${SITE_URL}/icon.svg` },
+    logo: { '@type': 'ImageObject', url: `${SITE_URL}${brandAssets.faviconSvg}` },
     contactPoint: {
       '@type': 'ContactPoint',
       email: 'mail@daemon8.ai',
