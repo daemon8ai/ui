@@ -18,7 +18,7 @@ Daemon8 is open source and installed from source. Clone the repository, install 
 
 ```bash
 git clone https://github.com/daemon8ai/daemon8.git
-cd daemon8/daemon
+cd daemon8
 cargo install --path crates/daemon --force --locked
 codesign --force --sign - ~/.cargo/bin/daemon8
 daemon8 install
@@ -27,13 +27,13 @@ daemon8 setup
 
 macOS 14+ requires the `codesign` step after every rebuild. `launchd` caches the prior ad-hoc identity and will reject the new binary without it.
 
-macOS binaries are signed with Developer ID Application: jonathan havens (4WT356MQPL). Notarization is not yet built (deferred to v0.2), so macOS Gatekeeper may show a warning on first launch. Linux and Windows binaries ship unsigned.
+Release binaries are code-signed with an Apple Developer ID. Notarization is not yet built (deferred to v0.2), so macOS Gatekeeper may show a warning on first launch. Run `codesign -dvv $(which daemon8) | grep Authority` to verify. Linux and Windows binaries ship unsigned.
 
 ### Linux
 
 ```bash
 git clone https://github.com/daemon8ai/daemon8.git
-cd daemon8/daemon
+cd daemon8
 cargo install --path crates/daemon --force --locked
 daemon8 install
 daemon8 setup

@@ -33,7 +33,7 @@ function DocsLanding() {
         Daemon8 Documentation
       </h1>
       <p className="text-[18px] md:text-[20px] font-sans text-d8-text-muted tracking-[-0.01em] mb-8">
-        Unified I/O for AI Agents.
+        The admin layer for AI agents.
       </p>
 
       <blockquote className="mb-7 border-l-2 border-d8-primary/50 pl-4 md:pl-5">

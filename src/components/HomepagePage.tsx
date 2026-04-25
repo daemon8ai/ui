@@ -179,7 +179,7 @@ export function HomepagePage() {
           <div className="max-w-[640px]">
             <Wordmark size="lg" />
             <h1 className="mt-9 text-[clamp(1.6rem,5.2vw,3.25rem)] leading-[1.02] tracking-[-0.03em] text-d8-text max-w-[560px]">
-              Unified I/O for AI Agents.
+              The admin layer for AI agents.
             </h1>
             <p className="mt-6 text-[15px] md:text-[18px] text-d8-text-muted leading-relaxed max-w-[560px]">
               See browser console/network, adb, and app logs in one place.

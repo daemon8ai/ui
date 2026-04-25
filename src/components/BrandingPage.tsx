@@ -262,7 +262,7 @@ function SocialComposition({ asset }: { asset: BrandAsset }) {
           lineHeight: 1.25,
         }}
       >
-        Unified I/O for AI Agents.
+        The admin layer for AI agents.
       </p>
     </div>
   )

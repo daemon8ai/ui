@@ -9,7 +9,7 @@ type SeoOptions = {
 
 const SITE_NAME = 'Daemon8'
 const SITE_URL = 'https://daemon8.ai'
-const DEFAULT_DESCRIPTION = 'Unified I/O for AI Agents. See browser console/network, adb, and app logs in one place.'
+const DEFAULT_DESCRIPTION = 'The admin layer for AI agents. Observe. Act. Coordinate.'
 const DEFAULT_IMAGE = brandAssets.ogImagePng
 
 export function seo({ title, description, path, image }: SeoOptions) {

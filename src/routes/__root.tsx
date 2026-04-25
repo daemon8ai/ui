@@ -18,7 +18,7 @@ export const Route = createRootRoute({
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { name: 'theme-color', content: '#0B1120' },
-      { name: 'description', content: 'Unified I/O for AI Agents. See browser console/network, adb, and app logs in one place.' },
+      { name: 'description', content: 'The admin layer for AI agents. Observe. Act. Coordinate.' },
       { property: 'og:site_name', content: 'Daemon8' },
       { property: 'og:type', content: 'website' },
       { property: 'og:image', content: `${SITE_URL}${brandAssets.ogImagePng}` },
@@ -32,7 +32,7 @@ export const Route = createRootRoute({
       jsonLd(webSiteSchema()) as any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       jsonLd(softwareSourceCodeSchema()) as any,
-      { title: 'Daemon8 — Unified I/O for AI Agents' },
+      { title: 'Daemon8 — The admin layer for AI agents' },
     ],
     links: [
       { rel: 'stylesheet', href: appCss },

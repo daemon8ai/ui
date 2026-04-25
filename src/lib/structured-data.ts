@@ -4,7 +4,7 @@ const SITE_URL = 'https://daemon8.ai'
 const SITE_NAME = 'Daemon8'
 const REPO_URL = 'https://github.com/daemon8ai/daemon8'
 const LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`
-const DEFAULT_DESCRIPTION = 'Unified I/O for AI Agents. See browser console/network, adb, and app logs in one place.'
+const DEFAULT_DESCRIPTION = 'The admin layer for AI agents. Observe. Act. Coordinate.'
 
 export function jsonLd(schema: Record<string, unknown>) {
   return { 'script:ld+json': { '@context': 'https://schema.org', ...schema } }

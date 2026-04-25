@@ -6,7 +6,7 @@ export const Route = createFileRoute('/_marketing/')({
   head: () => {
     const s = seo({
       title: 'Daemon8',
-      description: 'Unified I/O for AI Agents. See browser console/network, adb, and app logs in one place.',
+      description: 'The admin layer for AI agents. Observe. Act. Coordinate.',
       path: '/',
     })
     return { title: s.title, meta: s.meta, links: s.links }
