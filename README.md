@@ -15,7 +15,7 @@
 </p>
 
 > [!TIP]
-> Daemon8 is 'closing the loop' - agents will be able to debug anything in one MCP call - that's the objective! Care to help ensure this type of power stays open source?? Consider starring the repo!
+> Help keep Daemon8 open source — [star the main repo](https://github.com/daemon8ai/daemon8).
 
 ---
 
@@ -31,7 +31,7 @@ cp .env.example .env
 bun run dev
 ```
 
-The site runs at http://localhost:3000. The `LARAVEL_API_URL` in `.env` must point at a running instance of the Daemon8 Laravel backend (local dev: http://localhost:8977).
+The site runs at http://localhost:3000. See `.env.example` for required environment variables.
 
 ## Stack
 
@@ -44,4 +44,4 @@ The site runs at http://localhost:3000. The `LARAVEL_API_URL` in `.env` must poi
 
 MIT. See [`LICENSE`](./LICENSE).
 
-Copyright © 2026 Havy.tech LLC.
+Copyright © 2026 Havy.tech, LLC.
